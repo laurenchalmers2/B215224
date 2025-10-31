@@ -39,6 +39,8 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
+# ds store
+ds.store.
 # pkgdown site
 docs/
 
