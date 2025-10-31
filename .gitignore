@@ -41,11 +41,13 @@ vignettes/*.pdf
 
 # ds store
 ds.store.
-# pkgdown site
-docs/
+
 
 # translation temp files
 po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# data folder
+data/
