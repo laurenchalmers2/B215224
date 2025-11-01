@@ -7,30 +7,43 @@ date: "2025-10-31"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+Loading in prescription data sets and health board names from open nhs data. Loading census education data and cleaning names. Using skip function, so R only reads 
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
+```{r}
 library(tidyverse)
-library(ggplot2)
+library(janitor)
+library(here)
 
-summary(cars)
+
+july_2025_data <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/f02161c1-15f6-4d9f-8be5-01ba613d4303/download/hb_pitc2025_07.csv") %>% 
+  clean_names()
+
+health_board_names <- read_csv("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/resource/652ff726-e676-4a20-abda-435b98dd7bdc/download/hb14_hb19.csv") %>% 
+  clean_names()
+
+Qualifications_by_health_board <- read_csv(here("data", "Educationcensusdata.csv"), skip = 10) %>% 
+  clean_names()
+
+
 ```
 
-## Including Plots
+Joining prescription Dataset from July 2025, with health boards names. Selecting columns with health board names, the item prescribed and the quantity in which they were prescribed. Filtered using string detect to identify just antibiotic prescriptions, since they all end in 'illin'.
+```{r}
+Health_board_july_data <- july_2025_data %>% 
+  left_join(health_board_names, by = join_by(hbt == hb)) %>% 
+  select(hb_name, bnf_item_description, paid_quantity) %>%
+  filter(str_detect(bnf_item_description, "ILLIN")) %>% 
+  summarise(paid_quantity= sum(paid_quantity))
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(cars)
-
-cars %>% 
-  ggplot(aes(x = speed , y = dist)) +
-  geom_col()
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+Totaling up antibiotic prescribtions for each health board
+```{r}
+
+Total_per_health_board <- Health_board_july_data %>% 
+  summarise(paid_quantity= sum(paid_quantity))
+  
+```
+
+
