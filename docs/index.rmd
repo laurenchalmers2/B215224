@@ -119,14 +119,11 @@ Make a new tibble with different column headings to determine education staus of
 library(dplyr)
 library(tidyr)
 
-education %>% 
-  as.numeric(hb_education_population)
-
 # Step 2: Convert from wide to long format
 education_per_health_board <- education %>%
   pivot_longer(cols = 2:last_col(),
     names_to = "qualification_type",
-    values_to = "population_qualified") 
+    values_to = "population_qualified",values_transform = list(population_qualified = as.numeric)) 
 
 # Step 4:Remove rows where population is NA
 education_per_health_board <- education_per_health_board %>%
