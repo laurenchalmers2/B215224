@@ -96,45 +96,34 @@ population <- population %>%
          hb_population = count) %>% 
   filter(age == "All people" & sex == "All people") %>% 
          select(hb_name, hb_population) %>%
-        mutate(hb_name = paste("NHS", hb_name)) 
-
-
+        mutate(hb_name = paste("NHS", hb_name))
 ```
 
-Tidying up education data and wrangling to calculate the percentage of each health board that hold degrees
-
+Tidy up education data 
 ```{r}
-education <- education %>% 
-  rename(Spare = "x9", 
-         hb_name = "highest_level_of_qualification", 
-         hb_population = "all_people_aged_16_and_over", 
-         degrees = "degree_level_qualifications_or_above") %>%  
-  mutate(hb_name = paste("NHS", hb_name), hb_population = as.numeric(as.character(hb_population)),
-    degrees = as.numeric(as.character(degrees))) %>% 
-  select(hb_population, degrees, hb_name) %>% 
-  mutate(percentage_of_hb_with_degrees = (degrees / hb_population) * 100)
+education <- education %>%
+  rename(Spare = "x9",
+         hb_name = "highest_level_of_qualification",
+         hb_education_population = "all_people_aged_16_and_over") %>% 
+        mutate(hb_name = paste("NHS", hb_name)) %>% 
+  filter(hb_name != "NHS INFO", !is.na(hb_education_population))
 
+  
 ```
 
-Plotting this data 
 
-```{r}
-education %>% 
-  ggplot(aes(x = hb_name, y = percentage_of_hb_with_degrees)) +
-  geom_col()+
-  labs(x = "Health Board Names", y = "Percentage of those that hold Degree Qualifications or Higher", Title = "Percentage of Health Board that hold Degree Qualifications or Higher") +
-  facet_wrap(~hb_name)
-```
 
 Make a new tibble with different column headings to determine education staus of each healthboard
 
 ```{r}
-
 library(dplyr)
 library(tidyr)
 
+education %>% 
+  as.numeric(hb_education_population)
+
 # Step 2: Convert from wide to long format
-education_per_health_board <- education2 %>%
+education_per_health_board <- education %>%
   pivot_longer(cols = 2:last_col(),
     names_to = "qualification_type",
     values_to = "population_qualified") 
@@ -145,7 +134,7 @@ education_per_health_board <- education_per_health_board %>%
  
 ```
 
-Joining data containing the number health boatrds that hold each type of qualification with the population data, to manipulate the percentage of the hb population that hold each type of qualification
+Joining data containing the number health boards that hold each type of qualification with the population data, to manipulate the percentage of the hb population that hold each type of qualification
 
 ```{r}
 education_per_health_board_pcts <- education_per_health_board%>% 
