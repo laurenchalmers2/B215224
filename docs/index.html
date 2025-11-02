@@ -398,20 +398,19 @@ function, so R only reads</p>
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>Qualifications_by_health_board &lt;- read_csv(here(&quot;data&quot;, &quot;Educationcensusdata.csv&quot;), skip = 10) %&gt;% 
-  clean_names()</code></pre>
+<pre class="r"><code>Population_data &lt;- read_csv(here(&quot;data&quot;, &quot;Populationagedata.csv&quot;), skip = 10 ) %&gt;% clean_names()</code></pre>
 <pre><code>## New names:
-## • `` -&gt; `...9`</code></pre>
+## • `` -&gt; `...5`</code></pre>
 <pre><code>## Warning: One or more parsing issues, call `problems()` on your data frame for details,
 ## e.g.:
 ##   dat &lt;- vroom(...)
 ##   problems(dat)</code></pre>
-<pre><code>## Rows: 18 Columns: 9
+<pre><code>## Rows: 381 Columns: 5
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
-## chr (2): Highest level of qualification, All people aged 16 and over
-## dbl (6): No qualifications, Lower school qualifications, Upper school qualif...
-## lgl (1): ...9
+## chr (3): Counting, Health Board Area 2019, Adult lifestage - 22 groups, all
+## dbl (1): Count
+## lgl (1): ...5
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
@@ -419,15 +418,24 @@ function, so R only reads</p>
 names. Selecting columns with health board names, the item prescribed
 and the quantity in which they were prescribed. Filtered using string
 detect to identify just antibiotic prescriptions, since they all end in
-‘illin’.</p>
+‘illin’. Totaling up antibiotic prescribtions for each health board</p>
 <pre class="r"><code>Health_board_july_data &lt;- july_2025_data %&gt;% 
   left_join(health_board_names, by = join_by(hbt == hb)) %&gt;% 
   select(hb_name, bnf_item_description, paid_quantity) %&gt;%
-  filter(str_detect(bnf_item_description, &quot;ILLIN&quot;)) %&gt;% 
-  summarise(paid_quantity= sum(paid_quantity))</code></pre>
-<p>Totaling up antibiotic prescribtions for each health board</p>
-<pre class="r"><code>Total_per_health_board &lt;- Health_board_july_data %&gt;% 
-  summarise(paid_quantity= sum(paid_quantity))</code></pre>
+  filter(str_detect(bnf_item_description, &quot;ILLIN&quot;)) </code></pre>
+<pre class="r"><code>Population_data &lt;- Population_data %&gt;% 
+    rename(hb_name = &quot;health_board_area_2019&quot;,
+         hb_population = count) %&gt;% 
+         select(hb_name, hb_population) %&gt;%
+        mutate(hb_name = paste(&quot;NHS&quot;, hb_name)) </code></pre>
+<pre class="r"><code>Population_health_data_july_2025 &lt;- Health_board_july_data %&gt;%
+  left_join(Population_data, by = join_by(hb_name == hb_name)) %&gt;% 
+   mutate(antibiotics_per_person = paid_quantity/hb_population) </code></pre>
+<pre><code>## Warning in left_join(., Population_data, by = join_by(hb_name == hb_name)): Detected an unexpected many-to-many relationship between `x` and `y`.
+## ℹ Row 1 of `x` matches multiple rows in `y`.
+## ℹ Row 1 of `y` matches multiple rows in `x`.
+## ℹ If a many-to-many relationship is expected, set `relationship =
+##   &quot;many-to-many&quot;` to silence this warning.</code></pre>
 
 
 

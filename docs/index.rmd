@@ -40,9 +40,8 @@ Population_data <- Population_data %>%
     rename(hb_name = "health_board_area_2019",
          hb_population = count) %>% 
          select(hb_name, hb_population) %>%
-        mutate(hb_name = paste("NHS", hb_name)) %>% 
-  group_by(hb_name) %>% 
- summarise(mutate(hb_population = sum(hb_population)))
+        mutate(hb_name = paste("NHS", hb_name)) 
+
   
 ```
 
