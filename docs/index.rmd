@@ -21,29 +21,44 @@ july_2025_data <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-
 health_board_names <- read_csv("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/resource/652ff726-e676-4a20-abda-435b98dd7bdc/download/hb14_hb19.csv") %>% 
   clean_names()
 
-Qualifications_by_health_board <- read_csv(here("data", "Educationcensusdata.csv"), skip = 10) %>% 
-  clean_names()
-
+Population_data <- read_csv(here("data", "Populationagedata.csv"), skip = 10 ) %>% clean_names()
 
 ```
 
-Joining prescription Dataset from July 2025, with health boards names. Selecting columns with health board names, the item prescribed and the quantity in which they were prescribed. Filtered using string detect to identify just antibiotic prescriptions, since they all end in 'illin'.
+Joining prescription Dataset from July 2025, with health boards names. Selecting columns with health board names, the item prescribed and the quantity in which they were prescribed. Filtered using string detect to identify just antibiotic prescriptions, since they all end in 'illin'. Totaling up antibiotic prescribtions for each health board
 ```{r}
 Health_board_july_data <- july_2025_data %>% 
   left_join(health_board_names, by = join_by(hbt == hb)) %>% 
   select(hb_name, bnf_item_description, paid_quantity) %>%
-  filter(str_detect(bnf_item_description, "ILLIN")) %>% 
-  summarise(paid_quantity= sum(paid_quantity))
+  filter(str_detect(bnf_item_description, "ILLIN")) 
+ 
+  
+```
 
+```{r}
+Population_data <- Population_data %>% 
+    rename(hb_name = "health_board_area_2019",
+         hb_population = count) %>% 
+         select(hb_name, hb_population) %>%
+        mutate(hb_name = paste("NHS", hb_name)) %>% 
+  group_by(hb_name) %>% 
+ summarise(mutate(hb_population = sum(hb_population)))
+  
 ```
 
 
-Totaling up antibiotic prescribtions for each health board
+```{r}
+Population_health_data_july_2025 <- Health_board_july_data %>%
+  left_join(Population_data, by = join_by(hb_name == hb_name)) %>% 
+   mutate(antibiotics_per_person = paid_quantity/hb_population) 
+  
+```
+
+
 ```{r}
 
-Total_per_health_board <- Health_board_july_data %>% 
-  summarise(paid_quantity= sum(paid_quantity))
-  
+
+
 ```
 
 

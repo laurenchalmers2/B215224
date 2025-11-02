@@ -42,7 +42,6 @@ vignettes/*.pdf
 # ds store
 ds.store.
 
-
 # translation temp files
 po/*~
 
