@@ -21,43 +21,180 @@ july_2025_data <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-
 health_board_names <- read_csv("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/resource/652ff726-e676-4a20-abda-435b98dd7bdc/download/hb14_hb19.csv") %>% 
   clean_names()
 
-Population_data <- read_csv(here("data", "Populationagedata.csv"), skip = 10 ) %>% clean_names()
-
 ```
 
-Joining prescription Dataset from July 2025, with health boards names. Selecting columns with health board names, the item prescribed and the quantity in which they were prescribed. Filtered using string detect to identify just antibiotic prescriptions, since they all end in 'illin'. Totaling up antibiotic prescribtions for each health board
+Joining prescription Dataset from July 2025, with health boards names. Selecting columns with health board names, the item prescribed and the quantity in which they were prescribed. Filtered using string detect to identify just antibiotic prescriptions, since they all end in 'illin'.
+
+Removing rows where there is no info about health board names 
 ```{r}
-Health_board_july_data <- july_2025_data %>% 
-  left_join(health_board_names, by = join_by(hbt == hb)) %>% 
-  select(hb_name, bnf_item_description, paid_quantity) %>%
-  filter(str_detect(bnf_item_description, "ILLIN")) 
- 
+Health_board_july_data <- july_2025_data %>%
+  left_join(health_board_names, by = join_by(hbt == hb)) 
+
+missing_values <- Health_board_july_data%>%
+  filter(is.na(hb_name))
+```
+
+Wrangling with population data to compare with prescription health board data
+```{r}
+population_data <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10) %>% 
+  clean_names() %>% 
+rename(Spare = "x6",
+         hb_name = "health_board_area_2019",
+         hb_population = count) %>% 
+  filter(age == "All people" & sex == "All people") %>% 
+         select(hb_name, hb_population) %>%
+        mutate(hb_name = paste("NHS", hb_name)) 
   
 ```
 
+Joining Population with prescription data 
 ```{r}
-Population_data <- Population_data %>% 
-    rename(hb_name = "health_board_area_2019",
+
+population_health_data_july_2025 <-  population_data %>%
+  left_join(Health_board_july_data, by = join_by(hb_name == hb_name))
+
+```
+
+Grouping data by tyope of prescription anf filtering prescriptions to only see antibiotic prescriptions. Totalling up number of antibiotics for each healthboard.
+```{r}
+health_board_population_antibiotics <- population_health_data_july_2025 %>% 
+  filter(str_detect(bnf_item_description, "ILLIN")) %>% 
+  group_by(hb_name, bnf_item_description) %>% 
+  summarise(paid_quantity = sum(paid_quantity)) 
+
+```
+Joining with population data to determin number of antibiotics per person in each health board
+```{r}
+antibiotics_july_data <- health_board_population_antibiotics %>% 
+  filter(str_detect(bnf_item_description, "ILLIN")) %>% 
+  summarise(paid_quantity = sum(paid_quantity)) %>% 
+  left_join(population_data) %>% 
+  mutate(antibiotics_per_person = paid_quantity/hb_population) %>% 
+  arrange(desc(antibiotics_per_person))
+```
+
+```{r}
+antibiotics_july_data %>% 
+  ggplot(aes(x = hb_name, y = antibiotics_per_person, colour = hb_name, fill = hb_name)) +
+  geom_col() +
+  labs(x = "Health Board Name", y = "Number of Antibiotics per person in July 2025", title = "Number of Antibiotics Prescribed per person in July 2025") 
+```
+
+```{r}
+education <- read_csv(here("data", "Educationcensusdata.csv"), skip = 10) %>% 
+  clean_names()
+population <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10) %>% 
+  clean_names()
+```
+
+Tidying up population data
+
+```{r}
+population <- population %>% 
+  rename(Spare = "x6",
+         hb_name = "health_board_area_2019",
          hb_population = count) %>% 
+  filter(age == "All people" & sex == "All people") %>% 
          select(hb_name, hb_population) %>%
         mutate(hb_name = paste("NHS", hb_name)) 
 
-  
+
 ```
 
+Tidying up education data and wrangling to calculate the percentage of each health board that hold degrees
 
 ```{r}
-Population_health_data_july_2025 <- Health_board_july_data %>%
-  left_join(Population_data, by = join_by(hb_name == hb_name)) %>% 
-   mutate(antibiotics_per_person = paid_quantity/hb_population) 
-  
+education <- education %>% 
+  rename(Spare = "x9", 
+         hb_name = "highest_level_of_qualification", 
+         hb_population = "all_people_aged_16_and_over", 
+         degrees = "degree_level_qualifications_or_above") %>%  
+  mutate(hb_name = paste("NHS", hb_name), hb_population = as.numeric(as.character(hb_population)),
+    degrees = as.numeric(as.character(degrees))) %>% 
+  select(hb_population, degrees, hb_name) %>% 
+  mutate(percentage_of_hb_with_degrees = (degrees / hb_population) * 100)
+
 ```
 
+Plotting this data 
+
+```{r}
+education %>% 
+  ggplot(aes(x = hb_name, y = percentage_of_hb_with_degrees)) +
+  geom_col()+
+  labs(x = "Health Board Names", y = "Percentage of those that hold Degree Qualifications or Higher", Title = "Percentage of Health Board that hold Degree Qualifications or Higher") +
+  facet_wrap(~hb_name)
+```
+
+Make a new tibble with different column headings to determine education staus of each healthboard
 
 ```{r}
 
+library(dplyr)
+library(tidyr)
 
+# Step 2: Convert from wide to long format
+education_per_health_board <- education2 %>%
+  pivot_longer(cols = 2:last_col(),
+    names_to = "qualification_type",
+    values_to = "population_qualified") 
+
+# Step 4:Remove rows where population is NA
+education_per_health_board <- education_per_health_board %>%
+  filter(!is.na(population_qualified))
+ 
+```
+
+Joining data containing the number health boatrds that hold each type of qualification with the population data, to manipulate the percentage of the hb population that hold each type of qualification
+
+```{r}
+education_per_health_board_pcts <- education_per_health_board%>% 
+  left_join(population, by = join_by(hb_name == hb_name)) %>% 
+  filter(qualification_type != "hb_population") %>% 
+  mutate(pct_qualifications_per_hb_population = (population_qualified/hb_population)*100 )
 
 ```
 
+Plotting this data into a column plot, facet wrapping by health board name. 
+
+```{r}
+education_per_health_board_pcts %>% 
+  ggplot(aes(x = qualification_type, y = pct_qualifications_per_hb_population))+
+  geom_col()+
+  facet_wrap(~hb_name)
+```
+
+Joining the antibiotic prescription data from July with the data containing percentage of each healthboard holding each qualification type
+
+```{r}
+education_antibiotic_prescriptions <- antibiotics_july_data %>% 
+  left_join(education_per_health_board_pcts, by = join_by(hb_name == hb_name, hb_population == hb_population))
+```
+
+Selecting just the columns to be examined and plotted to make assumptions on.
+
+```{r}
+education_antibiotic_prescriptions <- education_antibiotic_prescriptions %>% 
+  select(hb_name, pct_qualifications_per_hb_population, paid_quantity, qualification_type) 
+
+p1 <- education_antibiotic_prescriptions %>%   
+  ggplot(aes(x = qualification_type, y = pct_qualifications_per_hb_population, fill = qualification_type))+
+  geom_col() +
+  facet_wrap(~hb_name)
+
+p2 <- education_antibiotic_prescriptions %>%  
+  ggplot(aes(x = hb_name, y = paid_quantity, fill = hb_name)) +
+  geom_col() +
+  facet_wrap(~qualification_type)
+
+library(janitor)
+library(patchwork)
+
+p1 + p2
+#qualifications across health boards and antibiotic prescriptions across healthboards
+```
+
+```{r}
+
+```
 
