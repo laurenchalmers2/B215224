@@ -27,10 +27,10 @@ Joining prescription Dataset from July 2025, with health boards names. Selecting
 
 Removing rows where there is no info about health board names 
 ```{r}
-Health_board_july_data <- july_2025_data %>%
+Health_board_data_2025 <- july_2025_data %>%
   left_join(health_board_names, by = join_by(hbt == hb)) 
 
-missing_values <- Health_board_july_data%>%
+missing_values <- Health_board_data_2025%>%
   filter(is.na(hb_name))
 ```
 
@@ -49,15 +49,14 @@ rename(Spare = "x6",
 
 Joining Population with prescription data 
 ```{r}
-
-population_health_data_july_2025 <-  population_data %>%
-  left_join(Health_board_july_data, by = join_by(hb_name == hb_name))
+population_2025_health_data <-  population_data %>%
+  left_join(Health_board_data_2025, by = join_by(hb_name == hb_name))
 
 ```
 
 Grouping data by tyope of prescription anf filtering prescriptions to only see antibiotic prescriptions. Totalling up number of antibiotics for each healthboard.
 ```{r}
-health_board_population_antibiotics <- population_health_data_july_2025 %>% 
+health_board_2025_population_antibiotics <- population_2025_health_data %>% 
   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
   group_by(hb_name, bnf_item_description) %>% 
   summarise(paid_quantity = sum(paid_quantity)) 
@@ -65,7 +64,7 @@ health_board_population_antibiotics <- population_health_data_july_2025 %>%
 ```
 Joining with population data to determine number of antibiotics per person in each health board
 ```{r}
-antibiotics_july_data <- health_board_population_antibiotics %>% 
+antibiotics_2025_data <- health_board_2025_population_antibiotics %>% 
   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
   summarise(paid_quantity = sum(paid_quantity)) %>% 
   left_join(population_data) %>% 
@@ -74,15 +73,21 @@ antibiotics_july_data <- health_board_population_antibiotics %>%
 ```
 
 ```{r}
-antibiotics_july_data %>% 
+library(forcats)
+
+p2025 <- antibiotics_2025_data %>%
+  mutate(hb_name = fct_reorder(hb_name, antibiotics_per_person)) %>%  # reorder factor by antibiotics_per_person ascending
   ggplot(aes(x = hb_name, y = antibiotics_per_person, colour = hb_name, fill = hb_name)) +
   geom_col() +
-  labs(x = "Health Board Name", y = "Number of Antibiotics per person in July 2025", title = "Number of Antibiotics Prescribed per person in July 2025") 
+  labs(
+    x = "Health Board Name",
+    y = "Number of Antibiotics per person in July 2025",
+    title = "Number of Antibiotics Prescribed per person in July 2025"
+  )
+
 ```
 
 ```{r}
-education <- read_csv(here("data", "Educationcensusdata.csv"), skip = 10) %>% 
-  clean_names()
 population <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10) %>% 
   clean_names()
 ```
@@ -97,87 +102,6 @@ population <- population %>%
   filter(age == "All people" & sex == "All people") %>% 
          select(hb_name, hb_population) %>%
         mutate(hb_name = paste("NHS", hb_name))
-```
-
-Tidy up education data 
-```{r}
-education <- education %>%
-  rename(Spare = "x9",
-         hb_name = "highest_level_of_qualification",
-         hb_education_population = "all_people_aged_16_and_over") %>% 
-        mutate(hb_name = paste("NHS", hb_name)) %>% 
-  filter(hb_name != "NHS INFO", !is.na(hb_education_population))
-
-  
-```
-
-
-
-Make a new tibble with different column headings to determine education staus of each healthboard
-
-```{r}
-library(dplyr)
-library(tidyr)
-
-# Step 2: Convert from wide to long format
-education_per_health_board <- education %>%
-  pivot_longer(cols = 2:last_col(),
-    names_to = "qualification_type",
-    values_to = "population_qualified",values_transform = list(population_qualified = as.numeric)) 
-
-# Step 4:Remove rows where population is NA
-education_per_health_board <- education_per_health_board %>%
-  filter(!is.na(population_qualified))
- 
-```
-
-Joining data containing the number health boards that hold each type of qualification with the population data, to manipulate the percentage of the hb population that hold each type of qualification
-
-```{r}
-education_per_health_board_pcts <- education_per_health_board%>% 
-  left_join(population, by = join_by(hb_name == hb_name)) %>% 
-  filter(qualification_type != "hb_population") %>% 
-  mutate(pct_qualifications_per_hb_population = (population_qualified/hb_population)*100 )
-
-```
-
-Plotting this data into a column plot, facet wrapping by health board name. 
-
-```{r}
-education_per_health_board_pcts %>% 
-  ggplot(aes(x = qualification_type, y = pct_qualifications_per_hb_population))+
-  geom_col()+
-  facet_wrap(~hb_name)
-```
-
-Joining the antibiotic prescription data from July with the data containing percentage of each healthboard holding each qualification type
-
-```{r}
-education_antibiotic_prescriptions <- antibiotics_july_data %>% 
-  left_join(education_per_health_board_pcts, by = join_by(hb_name == hb_name, hb_population == hb_population))
-```
-
-Selecting just the columns to be examined and plotted to make assumptions on.
-
-```{r}
-education_antibiotic_prescriptions <- education_antibiotic_prescriptions %>% 
-  select(hb_name, pct_qualifications_per_hb_population, paid_quantity, qualification_type) 
-
-p1 <- education_antibiotic_prescriptions %>%   
-  ggplot(aes(x = qualification_type, y = pct_qualifications_per_hb_population, fill = qualification_type))+
-  geom_col() +
-  facet_wrap(~hb_name)
-
-p2 <- education_antibiotic_prescriptions %>%  
-  ggplot(aes(x = hb_name, y = paid_quantity, fill = hb_name)) +
-  geom_col() +
-  facet_wrap(~qualification_type)
-
-library(janitor)
-library(patchwork)
-
-p1 + p2
-#qualifications across health boards and antibiotic prescriptions across healthboards
 ```
 
 Comparing with covid data 
@@ -210,11 +134,22 @@ july_2020_data_health_boards_population <- july_2020_data_health_boards_populati
 
 Calculating the number of antibiotics administered per person in each healthboard in july 2020
 ```{r}
-antibiotics_per_person_data <-july_2020_data_health_boards_population %>% 
+antibiotics_per_person_data_2020 <-july_2020_data_health_boards_population %>% 
   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
   summarise(paid_quantity = sum(paid_quantity)) %>% 
   left_join(population) %>% 
   mutate(antibiotics_per_person = paid_quantity/hb_population) 
+
+```
+
+PLotting this data 
+```{r}
+p2020 <- antibiotics_per_person_data_2020 %>% 
+  mutate(hb_name = fct_reorder(hb_name, antibiotics_per_person)) %>% 
+  ggplot(aes(x = hb_name, y = antibiotics_per_person, fill = hb_name, colour = hb_name)) +
+  geom_col() +
+    labs(x = "Health Board Name", y = "Number of Antibiotics per person in July 2020", title = "Number of Antibiotics Prescribed per person in July 2020") 
+
 ```
 
 comparing post and during covid with pre covid data
@@ -253,3 +188,99 @@ antibiotics_per_person_data_2016 <-july_2016_data_health_boards_population %>%
   mutate(antibiotics_per_person = paid_quantity/hb_population) 
 ```
 
+Plotting this data 
+```{r}
+p2016 <- antibiotics_per_person_data_2016 %>% 
+  mutate(hb_name = fct_reorder(hb_name, antibiotics_per_person)) %>% 
+  ggplot(aes(x = hb_name, y = antibiotics_per_person, fill = hb_name, colour = hb_name)) +
+  geom_col() +
+    labs(x = "Health Board Name", y = "Number of Antibiotics per person in July 2016", title = "Number of Antibiotics Prescribed per person in July 2016") 
+
+```
+
+Joining all years july data for comparison
+```{r}
+
+Joined_prescription_data <- antibiotics_per_person_data_2016 %>% 
+  left_join(antibiotics_per_person_data)
+
+Joined_prescription_data_all <- Joined_prescription_data %>% 
+  left_join(antibiotics_july_data)
+
+#is there a way to join this so values are not averaged, maybe ill try plotting and facet wrapping to see what this does 
+```
+Plotting all data 
+```{r}
+Joined_prescription_data_all %>% 
+  ggplot(aes(x = hb_name, y = antibiotics_per_person), fill = hb_name) +
+  geom_col() +
+   labs(x = "Health Board Name", y = "Number of Antibiotics per person", title = "Number of Antibiotics Prescribed per person in July 2016, July 2020, July 2025") 
+
+```
+
+Adding all graphs together 
+```{r}
+library(janitor )
+p2016 + p2020 + p2025
+
+```
+
+Investigating most common types of ab prescribed in each hb across pre, during and post covid 
+```{r}
+
+july_2016_ab_type <- july_2016_data %>% 
+  left_join(health_board_names, by = join_by(hbt2014 == hb)) %>% 
+  select(paid_quantity, hb_name, bnf_item_description, paid_date_month) %>% 
+  left_join(population, by = join_by(hb_name == hb_name)) 
+  
+
+```
+
+
+```{r}
+july_2016_ab_type <- july_2016_ab_type %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  group_by(bnf_item_description, hb_name, paid_date_month) %>% 
+  summarise(paid_quantity = sum(paid_quantity)) 
+```
+
+```{r}
+july_2016_ab_type_top_10 <- july_2016_ab_type %>% 
+  arrange(desc(paid_quantity)) %>% 
+  slice_max(paid_quantity, n = 10)
+```
+
+type data, doesnt take into account amount per person though, but probs not that relevant here 
+```{r}
+july_2016_ab_type_top_10 %>% 
+  ggplot(aes(x = bnf_item_description, y = paid_quantity, fill = bnf_item_description)) +
+  geom_col() +
+  facet_wrap(~hb_name)
+```
+
+Create a tibble of all data, and compare year against ab per person ?
+```{r}
+All_years <- july_2020_data %>% 
+  left_join(july_2016_data, by = join_by( hbt== hbt2014, bnf_item_description == bnf_item_description, paid_quantity == paid_quantity, paid_date_month == paid_date_month)) %>% 
+  left_join(july_2025_data, by = join_by(hbt == hbt, bnf_item_description == bnf_item_description, paid_quantity == paid_quantity, paid_date_month == paid_date_month))
+```
+
+
+```{r}
+All_years_hb <- All_years %>% 
+  left_join(health_board_names, by = join_by(hbt == hb))
+
+All_years_filtered <- All_years_hb %>% 
+  select(bnf_item_description, hb_name, paid_quantity, paid_date_month) %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  group_by(hb_name, bnf_item_description, paid_date_month) %>% 
+  summarise(paid_quantity = sum(paid_quantity)) %>% 
+  arrange(desc(paid_quantity)) %>% 
+  filter(!is.na (hb_name))
+
+All_years_filtered %>% 
+  ggplot(aes(x = bnf_item_description, y = paid_quantity, fill = hb_name)) +
+  geom_col() +
+  facet_wrap(~paid_date_month)
+
+  
