@@ -58,15 +58,15 @@ population_health_data_july_2025 <-  population_data %>%
 Grouping data by tyope of prescription anf filtering prescriptions to only see antibiotic prescriptions. Totalling up number of antibiotics for each healthboard.
 ```{r}
 health_board_population_antibiotics <- population_health_data_july_2025 %>% 
-  filter(str_detect(bnf_item_description, "ILLIN")) %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
   group_by(hb_name, bnf_item_description) %>% 
   summarise(paid_quantity = sum(paid_quantity)) 
 
 ```
-Joining with population data to determin number of antibiotics per person in each health board
+Joining with population data to determine number of antibiotics per person in each health board
 ```{r}
 antibiotics_july_data <- health_board_population_antibiotics %>% 
-  filter(str_detect(bnf_item_description, "ILLIN")) %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
   summarise(paid_quantity = sum(paid_quantity)) %>% 
   left_join(population_data) %>% 
   mutate(antibiotics_per_person = paid_quantity/hb_population) %>% 
@@ -180,7 +180,76 @@ p1 + p2
 #qualifications across health boards and antibiotic prescriptions across healthboards
 ```
 
+Comparing with covid data 
 ```{r}
+july_2020_data <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/80b6ddb1-f09b-4d76-9927-da1e118b01ff/download/pitc202007.csv") %>% 
+  clean_names()
+```
 
+Join with Health board names and population data
+
+```{r}
+july_2020_data_health_boards <- july_2020_data %>% 
+  left_join(health_board_names, by = join_by(hbt == hb))
+
+july_2020_data_health_boards_population <- july_2020_data_health_boards %>% 
+   left_join(population, by = join_by(hb_name == hb_name))
+  
+```
+
+Organising data: Filtering to select only antibiotic prescriptions, totalling up these for each healthboard, and grouping by health board and type of antibiotic.
+```{r}
+july_2020_data_health_boards_population <- july_2020_data_health_boards_population %>% 
+   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  group_by(hb_name, bnf_item_description) %>% 
+  summarise(paid_quantity = sum(paid_quantity)) %>% 
+  filter(!is.na(hb_name)) %>% 
+  left_join(population)
+
+```
+
+Calculating the number of antibiotics administered per person in each healthboard in july 2020
+```{r}
+antibiotics_per_person_data <-july_2020_data_health_boards_population %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  summarise(paid_quantity = sum(paid_quantity)) %>% 
+  left_join(population) %>% 
+  mutate(antibiotics_per_person = paid_quantity/hb_population) 
+```
+
+comparing post and during covid with pre covid data
+```{r}
+july_2016_data <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/c12c905b-3a2d-4b7a-b5d2-8c359b786beb/download/pitc201607.csv") %>% 
+  clean_names()
+```
+
+joining with health board and population data 
+
+```{r}
+july_2016_data_health_boards <- july_2016_data %>% 
+  left_join(health_board_names, by = join_by(hbt2014 == hb))
+
+july_2016_data_health_boards_population <- july_2016_data_health_boards %>% 
+   left_join(population, by = join_by(hb_name == hb_name))
+```
+
+Organising the data 
+
+```{r}
+july_2016_data_health_boards_population <- july_2016_data_health_boards_population %>% 
+   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  group_by(hb_name, bnf_item_description) %>% 
+  summarise(paid_quantity = sum(paid_quantity)) %>% 
+  filter(!is.na(hb_name)) %>% 
+  left_join(population)
+
+```
+calculating the numbers of ab per person in each health board in 2016
+```{r}
+antibiotics_per_person_data_2016 <-july_2016_data_health_boards_population %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  summarise(paid_quantity = sum(paid_quantity)) %>% 
+  left_join(population) %>% 
+  mutate(antibiotics_per_person = paid_quantity/hb_population) 
 ```
 
