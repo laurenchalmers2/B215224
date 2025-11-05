@@ -7,8 +7,7 @@ date: "2025-10-31"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-Loading in prescription data sets and health board names from open nhs data. Loading census education data and cleaning names. Using skip function, so R only reads 
-
+Loading in prescription data sets and health board names from open nhs data. loading population data from the census age by sex dataset 
 ```{r}
 library(tidyverse)
 library(janitor)
@@ -18,26 +17,38 @@ library(here)
 july_2025_data <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/f02161c1-15f6-4d9f-8be5-01ba613d4303/download/hb_pitc2025_07.csv") %>% 
   clean_names()
 
+july_2020_data <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/80b6ddb1-f09b-4d76-9927-da1e118b01ff/download/pitc202007.csv") %>% 
+  clean_names()
+
+july_2016_data <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/c12c905b-3a2d-4b7a-b5d2-8c359b786beb/download/pitc201607.csv") %>% 
+  clean_names()
+
 health_board_names <- read_csv("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/resource/652ff726-e676-4a20-abda-435b98dd7bdc/download/hb14_hb19.csv") %>% 
   clean_names()
 
+population <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10) %>% 
+  clean_names()  
+
+  #maybe need to load previous census population data too
+
 ```
 
-Joining prescription Dataset from July 2025, with health boards names. Selecting columns with health board names, the item prescribed and the quantity in which they were prescribed. Filtered using string detect to identify just antibiotic prescriptions, since they all end in 'illin'.
-
-Removing rows where there is no info about health board names 
+Joining prescription Dataset from all years, with health boards names. 
 ```{r}
-Health_board_data_2025 <- july_2025_data %>%
+hb_data_2025 <- july_2025_data %>%
   left_join(health_board_names, by = join_by(hbt == hb)) 
 
-missing_values <- Health_board_data_2025%>%
-  filter(is.na(hb_name))
+hb_data_2020 <- july_2020_data %>%
+  left_join(health_board_names, by = join_by(hbt == hb)) 
+
+hb_data_2016 <- july_2016_data %>%
+  left_join(health_board_names, by = join_by(hbt2014 == hb)) 
+
 ```
 
 Wrangling with population data to compare with prescription health board data
 ```{r}
-population_data <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10) %>% 
-  clean_names() %>% 
+population <- population %>% 
 rename(Spare = "x6",
          hb_name = "health_board_area_2019",
          hb_population = count) %>% 
@@ -47,314 +58,172 @@ rename(Spare = "x6",
   
 ```
 
-Joining Population with prescription data 
+Filtering for just ab and selecting specific columns: paid_quantity, paid_date_month, hb_name, bnf_item_description
 ```{r}
-population_2025_health_data <-  population_data %>%
-  left_join(Health_board_data_2025, by = join_by(hb_name == hb_name))
-
-```
-
-Grouping data by tyope of prescription anf filtering prescriptions to only see antibiotic prescriptions. Totalling up number of antibiotics for each healthboard.
-```{r}
-health_board_2025_population_antibiotics <- population_2025_health_data %>% 
+july_2016_ab <- data_2016 %>%
   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
-  group_by(hb_name, bnf_item_description) %>% 
-  summarise(paid_quantity = sum(paid_quantity)) 
+  select(bnf_item_description, hb_name, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, hb_name, paid_date_month)
 
-```
-Joining with population data to determine number of antibiotics per person in each health board
-```{r}
-antibiotics_2025_data <- health_board_2025_population_antibiotics %>% 
+july_2020_ab <- data_2020 %>%
   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
-  summarise(paid_quantity = sum(paid_quantity)) %>% 
-  left_join(population_data) %>% 
-  mutate(antibiotics_per_person = paid_quantity/hb_population) %>% 
-  arrange(desc(antibiotics_per_person))
-```
-
-```{r}
-library(forcats)
-
-p2025 <- antibiotics_2025_data %>%
-  mutate(hb_name = fct_reorder(hb_name, antibiotics_per_person)) %>%  # reorder factor by antibiotics_per_person ascending
-  ggplot(aes(x = hb_name, y = antibiotics_per_person, colour = hb_name, fill = hb_name)) +
-  geom_col() +
-  labs(
-    x = "Health Board Name",
-    y = "Number of Antibiotics per person in July 2025",
-    title = "Number of Antibiotics Prescribed per person in July 2025"
-  )
-
-```
-
-```{r}
-population <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10) %>% 
-  clean_names()
-```
-
-Tidying up population data
-
-```{r}
-population <- population %>% 
-  rename(Spare = "x6",
-         hb_name = "health_board_area_2019",
-         hb_population = count) %>% 
-  filter(age == "All people" & sex == "All people") %>% 
-         select(hb_name, hb_population) %>%
-        mutate(hb_name = paste("NHS", hb_name))
-```
-
-Comparing with covid data 
-```{r}
-july_2020_data <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/80b6ddb1-f09b-4d76-9927-da1e118b01ff/download/pitc202007.csv") %>% 
-  clean_names()
-```
-
-Join with Health board names and population data
-
-```{r}
-july_2020_data_health_boards <- july_2020_data %>% 
-  left_join(health_board_names, by = join_by(hbt == hb))
-
-july_2020_data_health_boards_population <- july_2020_data_health_boards %>% 
-   left_join(population, by = join_by(hb_name == hb_name))
+  select(bnf_item_description, hb_name, paid_quantity, paid_date_month) %>% 
+    group_by(bnf_item_description, hb_name, paid_date_month)
   
-```
-
-Organising data: Filtering to select only antibiotic prescriptions, totalling up these for each healthboard, and grouping by health board and type of antibiotic.
-```{r}
-july_2020_data_health_boards_population <- july_2020_data_health_boards_population %>% 
-   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
-  group_by(hb_name, bnf_item_description) %>% 
-  summarise(paid_quantity = sum(paid_quantity)) %>% 
-  filter(!is.na(hb_name)) %>% 
-  left_join(population)
-
-```
-
-Calculating the number of antibiotics administered per person in each healthboard in july 2020
-```{r}
-antibiotics_per_person_data_2020 <-july_2020_data_health_boards_population %>% 
+july_2025_ab <- data_2025 %>%
   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
-  summarise(paid_quantity = sum(paid_quantity)) %>% 
-  left_join(population) %>% 
-  mutate(antibiotics_per_person = paid_quantity/hb_population) 
+  select(bnf_item_description, hb_name, paid_quantity, paid_date_month) %>% 
+    group_by(bnf_item_description, hb_name, paid_date_month)
 
 ```
 
-PLotting this data 
-```{r}
-p2020 <- antibiotics_per_person_data_2020 %>% 
-  mutate(hb_name = fct_reorder(hb_name, antibiotics_per_person)) %>% 
-  ggplot(aes(x = hb_name, y = antibiotics_per_person, fill = hb_name, colour = hb_name)) +
-  geom_col() +
-    labs(x = "Health Board Name", y = "Number of Antibiotics per person in July 2020", title = "Number of Antibiotics Prescribed per person in July 2020") 
-
-```
-
-comparing post and during covid with pre covid data
-```{r}
-july_2016_data <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/c12c905b-3a2d-4b7a-b5d2-8c359b786beb/download/pitc201607.csv") %>% 
-  clean_names()
-```
-
-joining with health board and population data 
+Join this data together
 
 ```{r}
-july_2016_data_health_boards <- july_2016_data %>% 
-  left_join(health_board_names, by = join_by(hbt2014 == hb))
-
-july_2016_data_health_boards_population <- july_2016_data_health_boards %>% 
-   left_join(population, by = join_by(hb_name == hb_name))
+all_ab_data <- july_2025_ab %>% 
+  full_join(july_2020_ab) %>% 
+  full_join(july_2016_ab)
 ```
 
-Organising the data 
 
-```{r}
-july_2016_data_health_boards_population <- july_2016_data_health_boards_population %>% 
-   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
-  group_by(hb_name, bnf_item_description) %>% 
-  summarise(paid_quantity = sum(paid_quantity)) %>% 
-  filter(!is.na(hb_name)) %>% 
-  left_join(population)
-
-```
-calculating the numbers of ab per person in each health board in 2016
-```{r}
-antibiotics_per_person_data_2016 <-july_2016_data_health_boards_population %>% 
-  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
-  summarise(paid_quantity = sum(paid_quantity)) %>% 
-  left_join(population) %>% 
-  mutate(antibiotics_per_person = paid_quantity/hb_population) 
-```
-
-Plotting this data 
-```{r}
-p2016 <- antibiotics_per_person_data_2016 %>% 
-  mutate(hb_name = fct_reorder(hb_name, antibiotics_per_person)) %>% 
-  ggplot(aes(x = hb_name, y = antibiotics_per_person, fill = hb_name, colour = hb_name)) +
-  geom_col() +
-    labs(x = "Health Board Name", y = "Number of Antibiotics per person in July 2016", title = "Number of Antibiotics Prescribed per person in July 2016") 
-
-```
-
-Joining all years july data for comparison
-```{r}
-
-Joined_prescription_data <- antibiotics_per_person_data_2016 %>% 
-  left_join(antibiotics_per_person_data_2020)
-
-Joined_prescription_data_all <- Joined_prescription_data %>% 
-  left_join(antibiotics_2025_data)
-
-#is there a way to join this so values are not averaged, maybe ill try plotting and facet wrapping to see what this does 
-```
-Plotting all data 
-```{r}
-Joined_prescription_data_all %>% 
-  ggplot(aes(x = hb_name, y = antibiotics_per_person), fill = hb_name) +
-  geom_col() +
-   labs(x = "Health Board Name", y = "Number of Antibiotics per person", title = "Number of Antibiotics Prescribed per person in July 2016, July 2020, July 2025") 
-
-```
-
-Investigating most common types of ab prescribed in each hb across pre, during and post covid 
-```{r}
-
-july_2016_ab_type <- july_2016_data %>% 
-  left_join(health_board_names, by = join_by(hbt2014 == hb)) %>% 
-  select(paid_quantity, hb_name, bnf_item_description, paid_date_month) %>% 
-  left_join(population, by = join_by(hb_name == hb_name)) 
-  
-
-```
-
-Getting rid of dose data, so just shows different types of ab
-
+Wrangling with prescription data. Selecting only antibioitic prescriptions. Renaming antibiotocs to just their name so they can be totalled, instead of having different doses of each antibiotic. Also changing paid_date_month to just say the year, since all data is from july.  *need to do same with months now*
 ```{r}
 library(dplyr)
 library(stringr)
 
-july_2016_ab_type <- july_2016_ab_type %>%
-  filter(str_detect(bnf_item_description, "CILLIN")) %>%
-  mutate(bnf_item_description = case_when(str_starts(bnf_item_description, "AMOX") ~ "AMOXICILLIN", str_starts(bnf_item_description, "BENZYL") ~ "BENZYLPENICILLN", str_starts(bnf_item_description, "PHENO") ~ "PHENOXYMETHYLPENICILLIN" , str_starts(bnf_item_description, "PIV") ~ "PIVMECILLINAM", str_starts(bnf_item_description, "AMPI") ~ "AMPICILLIN", TRUE ~ bnf_item_description)) %>%
-  group_by(bnf_item_description, hb_name, paid_date_month) %>%
-  summarise(paid_quantity = sum(paid_quantity), .groups = "drop")
-
- 
-```
-
-```{r}
-july_2016_ab_type_top <- july_2016_ab_type %>% 
-  arrange(desc(paid_quantity)) 
-```
-
-type data, doesnt take into account amount per person though, but probs not that relevant here 
-```{r}
-july_2016_ab_type_top %>% 
-  ggplot(aes(x = bnf_item_description, y = paid_quantity, fill = bnf_item_description, colour = bnf_item_description)) +
-  geom_col() +
-  facet_wrap(~hb_name) +
-  labs(x = "Type of Antibiotic", y = "Number of Antibiotics Prescribed", title = "Most common Antibiotics Prescribed in July 2016")
-```
-
-Type data for 2020
-
-```{r}
-july_2020_ab_type <- july_2020_data %>% 
-  left_join(health_board_names, by = join_by(hbt == hb)) %>% 
-  select(paid_quantity, hb_name, bnf_item_description, paid_date_month) %>% 
-  left_join(population, by = join_by(hb_name == hb_name)) 
-  
-```
-
-
-```{r}
-july_2020_ab_type <- july_2020_ab_type %>% 
-  filter(str_detect(bnf_item_description, "CILLIN")) %>% mutate(bnf_item_description = case_when(str_starts(bnf_item_description, "AMOX") ~ "AMOXICILLIN", str_starts(bnf_item_description, "BENZYL") ~ "BENZYLPENICILLN", str_starts(bnf_item_description, "PHENO") ~ "PHENOXYMETHYLPENICILLIN" , str_starts(bnf_item_description, "PIV") ~ "PIVMECILLINAM", str_starts(bnf_item_description, "AMPI") ~ "AMPICILLIN", str_starts(bnf_item_description, "PIP") ~ "PIPERACILLIN", TRUE ~ bnf_item_description)) %>%
-  group_by(bnf_item_description, hb_name, paid_date_month) %>% 
+all_ab_data_tidy <- all_ab_data %>% 
+  rename(Year = paid_date_month, `Antibiotic Type` = bnf_item_description, 'Prescription Number' = paid_quantity) %>% 
+  mutate(
+    `Antibiotic Type` = case_when(
+      str_starts(`Antibiotic Type`, "AMOX") ~ "AMOXICILLIN",
+      str_starts(`Antibiotic Type`, "BENZYL") ~ "BENZYLPENICILLIN",
+      str_starts(`Antibiotic Type`, "PHENO") ~ "PHENOXYMETHYLPENICILLIN",
+      str_starts(`Antibiotic Type`, "PIV") ~ "PIVMECILLINAM",
+      str_starts(`Antibiotic Type`, "AMPI") ~ "AMPICILLIN",
+      str_starts(`Antibiotic Type`, "FLU") ~ "FLUCLOXACILLIN",
+      TRUE ~ `Antibiotic Type`
+    ),
+    Year = as.character(Year),
+    Year = case_when(
+      str_starts(Year, "2020") ~ "2020",
+      str_starts(Year, "2025") ~ "2025",
+      str_starts(Year, "2016") ~ "2016",
+      TRUE ~ Year
+    )
+  ) %>% 
+  group_by(`Antibiotic Type`, hb_name, Year) %>% 
   filter(!is.na(hb_name)) %>% 
-  summarise(paid_quantity = sum(paid_quantity)) 
+  summarise(paid_quantity = sum(paid_quantity))
+
+
 ```
 
+Joining Population with prescription data 
 ```{r}
-july_2020_ab_type_top_10 <- july_2020_ab_type %>% 
-  arrange(desc(paid_quantity)) %>% 
-  slice_max(paid_quantity, n = 10)
+tidy_ab_data_pop <-  population %>%
+  left_join(all_ab_data_tidy, by = join_by(hb_name == hb_name))
 ```
 
-type data, doesnt take into account amount per person though, but probs not that relevant here 
+Working out ab per person
 ```{r}
-july_2020_ab_type_top_10 %>% 
-  ggplot(aes(x = bnf_item_description, y = paid_quantity, fill = bnf_item_description, colour = bnf_item_description)) +
-  geom_col() +
+all_ab_data_tidy_person <- tidy_ab_data_pop %>% 
+  mutate(Ab_Per_Person = (paid_quantity/hb_population))
+```
+Plot 1 this: ab per person admionistered across different years 
+```{r}
+all_ab_data_tidy_person %>% 
+  ggplot(aes(x = hb_name, y = Ab_Per_Person, fill = `Antibiotic Type`)) +
+  geom_col(show.legend = TRUE) +
+  labs(
+    x = "Health Board Name", 
+    y = "Antibiotic Quantity Per Person", 
+    title = "Different in Number of Antibiotics Prescribed per person, Before, During and After Covid 19 Pandemic", 
+    fill = "Antibiotic Type") +
+  facet_wrap(~Year) +
+  theme_minimal(base_size = 14) +  # Cleaner, more modern look
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12), # Tilt x-axis labels for readability
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(face = "bold", size = 14),
+    plot.title = element_text(face = "bold", size = 16, hjust = 0),
+    legend.position = "bottom",  # Move legend below plot
+    legend.title = element_text(face = "bold", size = 13),
+    legend.text = element_text(size = 12),
+    panel.grid.major = element_line(color = "grey85"),
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold", size = 13)) +
+  guides(fill = guide_legend(nrow = 1))
+
+```
+PLot 2 but looking at which hb has biggest difference between years in prescribing
+```{r}
+all_ab_data_tidy_person %>% 
+  ggplot(aes(x = Year, y = Ab_Per_Person, fill = `Antibiotic Type`)) +
+  geom_col(show.legend = TRUE) +
+  labs(
+    x = "Health Board Name", 
+    y = "Antibiotic Quantity Per Person", 
+    title = "Different in Number of Antibiotics Prescribed per person, Before, During and After Covid 19 Pandemic", 
+    fill = "Antibiotic Type") +
   facet_wrap(~hb_name) +
-labs(x = "Type of Antibiotic", y = "Number of Antibiotics Prescribed", title = "Most common Antibiotics Prescribed in July 2020")
+  theme_minimal(base_size = 14) +  # Cleaner, more modern look
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12), # Tilt x-axis labels for readability
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(face = "bold", size = 14),
+    plot.title = element_text(face = "bold", size = 16, hjust = 0),
+    legend.position = "bottom",  # Move legend below plot
+    legend.title = element_text(face = "bold", size = 13),
+    legend.text = element_text(size = 12),
+    panel.grid.major = element_line(color = "grey85"),
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold", size = 13)) +
+  guides(fill = guide_legend(nrow = 1))
 ```
 
-
-Type data for 2025
-
-```{r}
-july_2025_ab_type <- july_2025_data %>% 
-  left_join(health_board_names, by = join_by(hbt == hb)) %>% 
-  select(paid_quantity, hb_name, bnf_item_description, paid_date_month) %>% 
-  left_join(population, by = join_by(hb_name == hb_name)) 
-  
-
-```
-
-
-```{r}
-july_2025_ab_type <- july_2025_ab_type %>% 
-  filter(str_detect(bnf_item_description, "CILLIN")) %>% mutate(bnf_item_description = case_when(str_starts(bnf_item_description, "AMOX") ~ "AMOXICILLIN", str_starts(bnf_item_description, "BENZYL") ~ "BENZYLPENICILLN", str_starts(bnf_item_description, "PHENO") ~ "PHENOXYMETHYLPENICILLIN" , str_starts(bnf_item_description, "PIV") ~ "PIVMECILLINAM", str_starts(bnf_item_description, "AMPI") ~ "AMPICILLIN", str_starts(bnf_item_description, "FLU") ~ "FLUCLOXACILLIN", TRUE ~ bnf_item_description)) %>%
-  group_by(bnf_item_description, hb_name, paid_date_month) %>% 
-  filter(!is.na(hb_name)) %>% 
-  summarise(paid_quantity = sum(paid_quantity)) 
-```
-
-```{r}
-july_2025_ab_type_top_10 <- july_2025_ab_type %>% 
-  arrange(desc(paid_quantity)) %>% 
-  slice_max(paid_quantity, n = 10)
-```
-
-type data, doesnt take into account amount per person though, but probs not that relevant here 
-```{r}
-july_2025_ab_type_top_10 %>% 
-  ggplot(aes(x = bnf_item_description, y = paid_quantity, fill = bnf_item_description)) +
-  geom_col() +
-  facet_wrap(~hb_name) + 
-  labs(x = "Type of Antibiotic", y = "Number of Antibiotics Prescribed", title = "Most common Antibiotics Prescribed in July 2025")
-```
-
-
-Create a tibble of all data, and compare year against ab per person ?
-```{r}
-All_years <- july_2020_data %>% 
-  left_join(july_2016_data, by = join_by( hbt== hbt2014, bnf_item_description == bnf_item_description, paid_quantity == paid_quantity, paid_date_month == paid_date_month)) %>% 
-  left_join(july_2025_data)
-```
-
-
-```{r}
-All_years_hb <- All_years %>% 
-  left_join(health_board_names, by = join_by(hbt == hb))
-
-
-All_years_filtered <- All_years_hb %>% 
-  select(bnf_item_description, hb_name, paid_quantity, paid_date_month) %>% 
-  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
-  group_by(hb_name, bnf_item_description, paid_date_month) %>% 
-  summarise(paid_quantity = sum(paid_quantity)) %>% 
-  arrange(desc(paid_quantity)) %>% 
-  filter(!is.na (hb_name))
-
-All_years_filtered %>% 
-  ggplot(aes(x = bnf_item_description, y = paid_quantity, fill = hb_name)) +
-  geom_col() +
-  facet_wrap(~paid_date_month)
-```
 
 Table containing data about antibiotic type, total number, number per person, across the 3 years and different healthboards *need to ask whether i need to use old census data for 2016 and 2020*, also need to ask if i should look at more months or just these months 
+
 ```{r}
+
+```
+
+
+PLOT3
+Nicer plot of ab types across diff years, doesnt look at healthbioards though, maybe make a map of this to se that?
+```{r}
+library(ggplot2)
+library(dplyr)
+
+all_ab_data_tidy %>% 
+  ggplot(aes(x = 'Antibiotic Type', y = paid_quantity, fill = 'Antibiotic Type')) +
+  geom_violin(show.legend = TRUE) +
+  labs(
+    x = "Antibiotic Type", 
+    y = "Antibiotic Quantity", 
+    title = "Different Types of Antibiotics Prescribed, Before, During and After Covid 19 Pandemic", 
+    fill = "Antibiotic Type"
+  ) +
+  facet_wrap(~Year) +
+  theme_minimal(base_size = 14) +  # Cleaner, more modern look
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12), # Tilt x-axis labels for readability
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(face = "bold", size = 14),
+    plot.title = element_text(face = "bold", size = 16, hjust = 0),
+    legend.position = "bottom",  # Move legend below plot
+    legend.title = element_text(face = "bold", size = 13),
+    legend.text = element_text(size = 12),
+    panel.grid.major = element_line(color = "grey85"),
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold", size = 13)
+  ) +
+  guides(fill = guide_legend(nrow = 1))  # Put legend items in one row for compactness
+
+#need to add a written legend to this
+```
+
+Tibble summary of results 
+
+```{r}
+
+```
+
