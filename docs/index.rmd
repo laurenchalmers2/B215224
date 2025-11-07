@@ -7,21 +7,246 @@ date: "2025-10-31"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-Loading in prescription data sets and health board names from open nhs data. loading population data from the census age by sex dataset 
+Loading R packages
 ```{r}
 library(tidyverse)
 library(janitor)
 library(here)
+```
+
+Loading 2024 data 
+```{r}
+jan_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/d3eaaf84-0f3b-4fb8-9460-e33503095fbe/download/pitc202401.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+feb_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/86fda652-0e1d-48bb-9368-aa2a560d925b/download/pitc202402.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+mar_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/a42762ac-47cb-4fb6-b9b1-2478a588c0ed/download/pitc202403.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+apr_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/409a02f2-b77c-47a0-917d-4a5a1c90f182/download/pitc202404.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+  
+may_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/5fbbd126-6166-4249-9620-7ed78e877297/download/pitc202405.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+june_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/95f7f250-bd04-4e4a-b853-5df75b00a632/download/pitc202406.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
 
 
-july_2025_data <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/f02161c1-15f6-4d9f-8be5-01ba613d4303/download/hb_pitc2025_07.csv") %>% 
-  clean_names()
+july_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/1cb425fc-640c-4b37-9013-f8e97f274085/download/pitc202407.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
 
-july_2020_data <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/80b6ddb1-f09b-4d76-9927-da1e118b01ff/download/pitc202007.csv") %>% 
-  clean_names()
 
-july_2016_data <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/c12c905b-3a2d-4b7a-b5d2-8c359b786beb/download/pitc201607.csv") %>% 
-  clean_names()
+aug_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/e4985a62-9d59-4e71-8800-3f7ca29ffe0c/download/pitc202408.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+
+sep_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/d1fbede3-98c4-436e-9e75-2ed807a36075/download/pitc202409.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+  
+oct_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/0d27f6e8-5f8b-42c4-9fe9-c44389af2d3e/download/pitc202410.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+nov_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/1b97dffc-310e-4a30-bf9c-22fddff3f499/download/pitc202411.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+ 
+dec_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/e4380152-3d16-446b-9072-108e93cf5caa/download/pitc202412.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+
+```
+Loading 2020 Data 
+```{r}
+jan_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/e5c841f2-3e16-428b-97db-0798ec7a5fb4/download/pitc202001.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+feb_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/af121e7c-4124-4955-92e9-a9580ccd469e/download/pitc202002.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+mar_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/9581bd8d-5568-4462-93a6-6d7bfbbe7cbc/download/pitc202003.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+apr_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/9cdc0526-21ab-43de-b832-bc032cd31b24/download/pitc202004.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+may_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/f2ffa7b3-3f93-470a-8125-880afb9aafe0/download/pitc202005.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+june_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/64131d22-ab47-43ff-9674-ebe8ed7edbd7/download/pitc202006.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+july_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/80b6ddb1-f09b-4d76-9927-da1e118b01ff/download/pitc202007.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+aug_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/5fd5f56e-d1d2-4f22-b4f7-224fbd50dca3/download/pitc202008.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+sep_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/e1b0cfdd-d184-4ebc-bd93-f1a10d84ead0/download/pitc202009.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+oct_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/83bf4892-d246-41f8-a6ca-d44d18e2a2ca/download/pitc202010.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+nov_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/ab8aa642-2562-4abb-a360-5c5f9e7e349c/download/pitc202011.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+dec_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/0c033702-4d88-4f2d-989c-a709b1f4529e/download/pitc202012.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+```
+Loading 2016 data 
+```{r}
+jan_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/7c487db9-f450-4319-8b18-4b825380692b/download/pitc201601.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt2014, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+feb_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/0727befa-5530-4c1d-aff0-ccb7554eff7a/download/pitc201602.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt2014, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+mar_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/20ad9575-4bd7-4bf4-af41-fd36071e2301/download/pitc201603.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt2014, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+apr_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/e44eb789-b8e0-41d9-a264-eba18b2d2473/download/pitc201604.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt2014, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+may_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/90ebb5ed-bc22-4bbc-8915-d55ae9d9906e/download/pitc201605.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt2014, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+june_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/a636862a-77e0-4c97-ba97-268578534a8e/download/pitc201606.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt2014, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+july_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/c12c905b-3a2d-4b7a-b5d2-8c359b786beb/download/pitc201607.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt2014, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+aug_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/bbd1d028-b9c6-4a28-b579-eafcaaa44703/download/pitc201608.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt2014, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+sep_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/2e0d6f14-3752-4c42-9a02-34d867132737/download/pitc201609.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt2014, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+oct_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/f22c20c1-6066-4f7d-a939-3ae654d1467a/download/pitc201610.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt2014, hbbnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+nov_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/5d421ba3-ccba-4d98-9772-e2e042b29a0f/download/pitc201611.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt2014, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+
+dec_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/597ea4bc-f733-45b6-8a60-5d7a6ac4824c/download/pitc201612.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
+  select(hbt2014, bnf_item_description, paid_quantity, paid_date_month) %>% 
+  group_by(bnf_item_description, paid_date_month)
+```
+
+Loading Health Board names and population data from the census 
+```{r}
 
 health_board_names <- read_csv("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/resource/652ff726-e676-4a20-abda-435b98dd7bdc/download/hb14_hb19.csv") %>% 
   clean_names()
@@ -32,67 +257,11 @@ population <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10
   #maybe need to load previous census population data too
 
 ```
-
-Joining prescription Dataset from all years, with health boards names. 
+Joining months data form each year to produce while year datasets 
 ```{r}
-hb_data_2025 <- july_2025_data %>%
-  left_join(health_board_names, by = join_by(hbt == hb)) 
 
-hb_data_2020 <- july_2020_data %>%
-  left_join(health_board_names, by = join_by(hbt == hb)) 
-
-hb_data_2016 <- july_2016_data %>%
-  left_join(health_board_names, by = join_by(hbt2014 == hb)) 
-
-```
-
-Wrangling with population data to compare with prescription health board data
-```{r}
-population <- population %>% 
-rename(Spare = "x6",
-         hb_name = "health_board_area_2019",
-         hb_population = count) %>% 
-  filter(age == "All people" & sex == "All people") %>% 
-         select(hb_name, hb_population) %>%
-        mutate(hb_name = paste("NHS", hb_name)) 
-  
-```
-
-Filtering for just ab and selecting specific columns: paid_quantity, paid_date_month, hb_name, bnf_item_description
-```{r}
-july_2016_ab <- data_2016 %>%
-  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
-  select(bnf_item_description, hb_name, paid_quantity, paid_date_month) %>% 
-  group_by(bnf_item_description, hb_name, paid_date_month)
-
-july_2020_ab <- data_2020 %>%
-  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
-  select(bnf_item_description, hb_name, paid_quantity, paid_date_month) %>% 
-    group_by(bnf_item_description, hb_name, paid_date_month)
-  
-july_2025_ab <- data_2025 %>%
-  filter(str_detect(bnf_item_description, "CILLIN")) %>% 
-  select(bnf_item_description, hb_name, paid_quantity, paid_date_month) %>% 
-    group_by(bnf_item_description, hb_name, paid_date_month)
-
-```
-
-Join this data together
-
-```{r}
-all_ab_data <- july_2025_ab %>% 
-  full_join(july_2020_ab) %>% 
-  full_join(july_2016_ab)
-```
-
-
-Wrangling with prescription data. Selecting only antibioitic prescriptions. Renaming antibiotocs to just their name so they can be totalled, instead of having different doses of each antibiotic. Also changing paid_date_month to just say the year, since all data is from july.  *need to do same with months now*
-```{r}
-library(dplyr)
-library(stringr)
-
-all_ab_data_tidy <- all_ab_data %>% 
-  rename(Year = paid_date_month, `Antibiotic Type` = bnf_item_description, 'Prescription Number' = paid_quantity) %>% 
+data_2024 <- list(jan_2024, feb_2024, mar_2024, apr_2024, may_2024, june_2024, july_2024, aug_2024, sep_2024, oct_2024, nov_2024, dec_2024) %>% 
+  reduce(full_join) %>% rename(Year = paid_date_month, `Antibiotic Type` = bnf_item_description, `Prescription Number` = paid_quantity) %>% 
   mutate(
     `Antibiotic Type` = case_when(
       str_starts(`Antibiotic Type`, "AMOX") ~ "AMOXICILLIN",
@@ -106,36 +275,182 @@ all_ab_data_tidy <- all_ab_data %>%
     Year = as.character(Year),
     Year = case_when(
       str_starts(Year, "2020") ~ "2020",
-      str_starts(Year, "2025") ~ "2025",
+      str_starts(Year, "2024") ~ "2024",
       str_starts(Year, "2016") ~ "2016",
-      TRUE ~ Year
-    )
-  ) %>% 
-  group_by(`Antibiotic Type`, hb_name, Year) %>% 
+      TRUE ~ Year)) 
+
+data_2020 <- list(jan_2020, feb_2020, mar_2024, apr_2020, may_2020, june_2020, july_2020, aug_2020, sep_2020, oct_2020, nov_2020, dec_2020) %>% 
+  reduce(full_join) %>% rename(Year = paid_date_month, `Antibiotic Type` = bnf_item_description, `Prescription Number` = paid_quantity) %>% 
+  mutate(
+    `Antibiotic Type` = case_when(
+      str_starts(`Antibiotic Type`, "AMOX") ~ "AMOXICILLIN",
+      str_starts(`Antibiotic Type`, "BENZYL") ~ "BENZYLPENICILLIN",
+      str_starts(`Antibiotic Type`, "PHENO") ~ "PHENOXYMETHYLPENICILLIN",
+      str_starts(`Antibiotic Type`, "PIV") ~ "PIVMECILLINAM",
+      str_starts(`Antibiotic Type`, "AMPI") ~ "AMPICILLIN",
+      str_starts(`Antibiotic Type`, "FLU") ~ "FLUCLOXACILLIN",
+      TRUE ~ `Antibiotic Type`
+    ),
+    Year = as.character(Year),
+    Year = case_when(
+      str_starts(Year, "2020") ~ "2020",
+      str_starts(Year, "2024") ~ "2024",
+      str_starts(Year, "2016") ~ "2016",
+      TRUE ~ Year)) 
+
+
+data_2016 <- list(jan_2016, feb_2016, mar_2016, apr_2016, may_2016, june_2016, july_2016, aug_2016, sep_2016, oct_2016, nov_2016, dec_2016) %>% 
+  reduce(full_join) %>% rename(Year = paid_date_month, `Antibiotic Type` = bnf_item_description, `Prescription Number` = paid_quantity) %>% 
+  mutate(
+    `Antibiotic Type` = case_when(
+      str_starts(`Antibiotic Type`, "AMOX") ~ "AMOXICILLIN",
+      str_starts(`Antibiotic Type`, "BENZYL") ~ "BENZYLPENICILLIN",
+      str_starts(`Antibiotic Type`, "PHENO") ~ "PHENOXYMETHYLPENICILLIN",
+      str_starts(`Antibiotic Type`, "PIV") ~ "PIVMECILLINAM",
+      str_starts(`Antibiotic Type`, "AMPI") ~ "AMPICILLIN",
+      str_starts(`Antibiotic Type`, "FLU") ~ "FLUCLOXACILLIN",
+      TRUE ~ `Antibiotic Type`
+    ),
+    Year = as.character(Year),
+    Year = case_when(
+      str_starts(Year, "2020") ~ "2020",
+      str_starts(Year, "2024") ~ "2024",
+      str_starts(Year, "2016") ~ "2016",
+      TRUE ~ Year)) 
+
+
+```
+
+
+Joining prescription Dataset from all years, with health boards names. 
+```{r}
+data_2024 <- data_2024 %>%
+  left_join(health_board_names, by = join_by(hbt == hb)) 
+
+data_2020 <- data_2020 %>%
+  left_join(health_board_names, by = join_by(hbt == hb)) 
+
+data_2016 <- data_2016 %>%
+  left_join(health_board_names, by = join_by(hbt2014 == hb)) 
+
+```
+Selecting and grouping columns to be examined *need to somehow fix this *
+```{r}
+data_2024 <- data_2024 %>% 
+  select(hb_name, `Antibiotic Type`, `Prescription Number`, Year) %>% 
   filter(!is.na(hb_name)) %>% 
-  summarise(paid_quantity = sum(paid_quantity))
+  group_by(`Antibiotic Type`, hb_name, Year) %>% 
+  summarise(`Prescription Number` = sum(`Prescription Number`, na.rm = TRUE)) %>% 
+  rename('Health Board' = hb_name)
 
+data_2020 <- data_2020 %>% 
+  select(hb_name, `Antibiotic Type`, `Prescription Number`, Year) %>% 
+  filter(!is.na(hb_name)) %>% 
+  group_by(`Antibiotic Type`, hb_name, Year) %>% 
+  summarise(`Prescription Number` = sum(`Prescription Number`, na.rm = TRUE)) %>% 
+  rename('Health Board' = hb_name)
+
+data_2016 <- data_2016 %>% 
+  select(hb_name, `Antibiotic Type`, `Prescription Number`, Year) %>% 
+  filter(!is.na(hb_name)) %>% 
+  group_by(`Antibiotic Type`, hb_name, Year) %>% 
+  summarise(`Prescription Number` = sum(`Prescription Number`, na.rm = TRUE)) %>% 
+  rename('Health Board' = hb_name)
 
 ```
 
-Joining Population with prescription data 
+Wrangling with population data to compare with prescription health board data
 ```{r}
-tidy_ab_data_pop <-  population %>%
-  left_join(all_ab_data_tidy, by = join_by(hb_name == hb_name))
+population <- population %>% 
+rename(Spare = "x6",
+         hb_name = "health_board_area_2019",
+         'Health Board Population' = count) %>% 
+  filter(age == "All people" & sex == "All people") %>% 
+         select(hb_name, 'Health Board Population' ) %>%
+        mutate(hb_name = paste("NHS", hb_name)) 
+  
 ```
 
-Working out ab per person
+Join this data together
+
 ```{r}
-all_ab_data_tidy_person <- tidy_ab_data_pop %>% 
-  mutate(Ab_Per_Person = (paid_quantity/hb_population))
+all_ab_data <- list(data_2016, data_2020, data_2024) %>% 
+  reduce(full_join) 
 ```
-Plot 1 this: ab per person admionistered across different years 
+
+
+Graphing ab type per healthboard per year, shows total ab prescriptions - should probs do this by person though
 ```{r}
-all_ab_data_tidy_person %>% 
-  ggplot(aes(x = hb_name, y = Ab_Per_Person, fill = `Antibiotic Type`)) +
+library(dplyr)
+library(stringr)
+
+all_ab_data %>% 
+  ggplot(aes(x = `Health Board`, y = `Prescription Number`, fill = `Antibiotic Type`)) +
+  geom_col(show.legend = TRUE) +
+  labs(x = "Health Board Name", 
+    y = "Antibiotic Quantity Per Health Board", 
+    title = "Different in Number of Antibiotics Prescribed per Health Board, Before, During and After Covid 19 Pandemic", 
+    fill = "Antibiotic Type") +
+  facet_wrap(~Year) +
+  theme_minimal(base_size = 14) +  # Cleaner, more modern look
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12), # Tilt x-axis labels for readability
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(face = "bold", size = 14),
+    plot.title = element_text(face = "bold", size = 16, hjust = 0),
+    legend.position = "bottom",  # Move legend below plot
+    legend.title = element_text(face = "bold", size = 13),
+    legend.text = element_text(size = 12),
+    panel.grid.major = element_line(color = "grey85"),
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold", size = 13)) +
+  guides(fill = guide_legend(nrow = 1))
+```
+
+Graphing ab types per year- measure most common tyoes rather than per perosn amounts 
+```{r}
+library(ggplot2)
+library(dplyr)
+
+all_ab_data %>% 
+  ggplot(aes(x = `Antibiotic Type`, y = `Prescription Number`, fill = `Antibiotic Type`)) +
   geom_col(show.legend = TRUE) +
   labs(
-    x = "Health Board Name", 
+    x = "Antibiotic Type", 
+    y = "Antibiotic Quantity Per Health Board", 
+    title = "Most Common Antibiotics Prescribed Before, During and After Covid 19 Pandemic", 
+    fill = "Health Board"  # Corrected legend label to match fill aesthetic
+  ) +
+  facet_wrap(~ factor(Year)) +  # Convert Year to factor for safe faceting
+  theme_minimal(base_size = 14) +  # Cleaner, modern look
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12),  # Tilt x labels
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(face = "bold", size = 14),
+    plot.title = element_text(face = "bold", size = 16, hjust = 0),
+    legend.position = "bottom",  # Legend below plot
+    legend.title = element_text(face = "bold", size = 13),
+    legend.text = element_text(size = 12),
+    panel.grid.major = element_line(color = "grey85"),
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold", size = 13)
+  ) +
+  guides(fill = guide_legend(nrow = 1))
+
+```
+
+Joining Population with prescription data, and calculating ab per person
+```{r}
+all_ab_data_pop <-  all_ab_data %>%
+  left_join(population, by = join_by('Health Board' == hb_name)) %>%
+  mutate(`Antibiotics Per Person` = `Prescription Number` / `Health Board Population`)
+```
+
+ ab per person administered across different years per each healthboard *try and order bars from increasing to decreasing*
+```{r}
+all_ab_data_pop %>% 
+  ggplot(aes(x = `Health Board`, y = `Antibiotics Per Person`, fill = `Antibiotic Type`)) +
+  geom_col(show.legend = TRUE) +
+  labs(x = "Health Board Name", 
     y = "Antibiotic Quantity Per Person", 
     title = "Different in Number of Antibiotics Prescribed per person, Before, During and After Covid 19 Pandemic", 
     fill = "Antibiotic Type") +
@@ -154,17 +469,18 @@ all_ab_data_tidy_person %>%
   guides(fill = guide_legend(nrow = 1))
 
 ```
-PLot 2 but looking at which hb has biggest difference between years in prescribing
+
+PLot 2 but looking at which hb has biggest difference between years in prescribing *maybe work out difference across years and graph this ? as a map or diff type of graph maybe *
 ```{r}
-all_ab_data_tidy_person %>% 
-  ggplot(aes(x = Year, y = Ab_Per_Person, fill = `Antibiotic Type`)) +
+all_ab_data_pop %>% 
+  ggplot(aes(x = Year, y = `Antibiotics Per Person`, fill = `Antibiotic Type`)) +
   geom_col(show.legend = TRUE) +
   labs(
-    x = "Health Board Name", 
+    x = "Year", 
     y = "Antibiotic Quantity Per Person", 
     title = "Different in Number of Antibiotics Prescribed per person, Before, During and After Covid 19 Pandemic", 
     fill = "Antibiotic Type") +
-  facet_wrap(~hb_name) +
+  facet_wrap(~`Health Board`) +
   theme_minimal(base_size = 14) +  # Cleaner, more modern look
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12), # Tilt x-axis labels for readability
     axis.text.y = element_text(size = 12),
@@ -181,47 +497,6 @@ all_ab_data_tidy_person %>%
 
 
 Table containing data about antibiotic type, total number, number per person, across the 3 years and different healthboards *need to ask whether i need to use old census data for 2016 and 2020*, also need to ask if i should look at more months or just these months 
-
-```{r}
-
-```
-
-
-PLOT3
-Nicer plot of ab types across diff years, doesnt look at healthbioards though, maybe make a map of this to se that?
-```{r}
-library(ggplot2)
-library(dplyr)
-
-all_ab_data_tidy %>% 
-  ggplot(aes(x = 'Antibiotic Type', y = paid_quantity, fill = 'Antibiotic Type')) +
-  geom_violin(show.legend = TRUE) +
-  labs(
-    x = "Antibiotic Type", 
-    y = "Antibiotic Quantity", 
-    title = "Different Types of Antibiotics Prescribed, Before, During and After Covid 19 Pandemic", 
-    fill = "Antibiotic Type"
-  ) +
-  facet_wrap(~Year) +
-  theme_minimal(base_size = 14) +  # Cleaner, more modern look
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 12), # Tilt x-axis labels for readability
-    axis.text.y = element_text(size = 12),
-    axis.title = element_text(face = "bold", size = 14),
-    plot.title = element_text(face = "bold", size = 16, hjust = 0),
-    legend.position = "bottom",  # Move legend below plot
-    legend.title = element_text(face = "bold", size = 13),
-    legend.text = element_text(size = 12),
-    panel.grid.major = element_line(color = "grey85"),
-    panel.grid.minor = element_blank(),
-    strip.text = element_text(face = "bold", size = 13)
-  ) +
-  guides(fill = guide_legend(nrow = 1))  # Put legend items in one row for compactness
-
-#need to add a written legend to this
-```
-
-Tibble summary of results 
 
 ```{r}
 
