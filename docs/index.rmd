@@ -229,7 +229,7 @@ sep_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a
 oct_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/f22c20c1-6066-4f7d-a939-3ae654d1467a/download/pitc201610.csv") %>% 
   clean_names() %>% 
   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
-  select(hbt2014, hbbnf_item_description, paid_quantity, paid_date_month) %>% 
+  select(hbt2014, bnf_item_description, paid_quantity, paid_date_month) %>% 
   group_by(bnf_item_description, paid_date_month)
 
 nov_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/5d421ba3-ccba-4d98-9772-e2e042b29a0f/download/pitc201611.csv") %>% 
@@ -253,11 +253,8 @@ health_board_names <- read_csv("https://www.opendata.nhs.scot/dataset/9f942fdb-e
 
 population <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10) %>% 
   clean_names()  
-
-  #maybe need to load previous census population data too
-
 ```
-Joining months data form each year to produce while year datasets 
+Joining months data form each year to produce whole year datasets 
 ```{r}
 
 data_2024 <- list(jan_2024, feb_2024, mar_2024, apr_2024, may_2024, june_2024, july_2024, aug_2024, sep_2024, oct_2024, nov_2024, dec_2024) %>% 
@@ -334,7 +331,7 @@ data_2016 <- data_2016 %>%
   left_join(health_board_names, by = join_by(hbt2014 == hb)) 
 
 ```
-Selecting and grouping columns to be examined *need to somehow fix this *
+Selecting and grouping columns to be examined 
 ```{r}
 data_2024 <- data_2024 %>% 
   select(hb_name, `Antibiotic Type`, `Prescription Number`, Year) %>% 
@@ -406,7 +403,7 @@ all_ab_data %>%
   guides(fill = guide_legend(nrow = 1))
 ```
 
-Graphing ab types per year- measure most common tyoes rather than per perosn amounts 
+Graphing ab types per year- measure most common tyoes rather than per person amounts *need to ask why this isnt printing
 ```{r}
 library(ggplot2)
 library(dplyr)
@@ -494,11 +491,62 @@ all_ab_data_pop %>%
     strip.text = element_text(face = "bold", size = 13)) +
   guides(fill = guide_legend(nrow = 1))
 ```
+Mapping some of the results 
+```{r}
+library(purrr)
+library(sf)
 
+class(all_ab_data_pop)
+
+# all_ab_data_pop should be an sf dataframe with geometry and attributes
+
+ggplot(data = all_ab_data_pop) +
+  geom_sf(aes(fill = `Antibiotics Per Person`)) +
+  scale_fill_continuous(labels = scales::label_comma())
+
+```
 
 Table containing data about antibiotic type, total number, number per person, across the 3 years and different healthboards *need to ask whether i need to use old census data for 2016 and 2020*, also need to ask if i should look at more months or just these months 
 
 ```{r}
+library(gt)
+
+all_ab_data_pop %>%
+  select(Year, `Health Board`, `Antibiotic Type`, `Prescription Number`, `Antibiotics Per Person` ) %>%
+  gt() %>%
+   cols_label(`Health Board` = "Health Board", Year = "Year", `Prescription Number` = "Prescription Number", `Antibiotic Type` = "Antibiotic Type") %>% 
+   cols_align(align = "left",
+              columns = Year)
+    tab_header(title = "Antibiotic Prescriptions Before, During and After Covid-19",
+    subtitle = "Data from scottish health boards 2016, 2020, 2024") %>% 
+    fmt_number(columns = vars(`Prescription Number`), use_seps = TRUE) %>% 
+      summary_rows(columns = c(`Antibiotics Per Person`, `Prescription Number`), 
+               fns = list(Average = ~mean(., na.rm = TRUE))) %>% 
+  grand_summary_rows(columns = c(`Antibiotics Per Person`, `Prescription Number`), 
+                     fns = list("Overall Average" = ~mean(., na.rm = TRUE)))
+    
+    
+    
+
+all_ab_data_pop %>%
+  select(Year, `Health Board`, `Antibiotic Type`, `Prescription Number`, `Antibiotics Per Person`) %>%
+  gt() %>%
+  cols_label(
+    Year = "Year",
+    `Health Board` = "Health Board",
+    `Antibiotic Type` = "Antibiotic Type",
+    `Prescription Number` = "Prescription Number",
+    `Antibiotics Per Person` = "Antibiotics per Person"
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = vars(Year)
+  ) %>%
+  tab_header(
+    title = "Antibiotic Prescriptions Before, During and After Covid-19",
+    subtitle = "Data from Scottish Health Boards 2016, 2020, 2024")
+
+
 
 ```
 
