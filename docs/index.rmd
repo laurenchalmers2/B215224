@@ -491,20 +491,7 @@ all_ab_data_pop %>%
     strip.text = element_text(face = "bold", size = 13)) +
   guides(fill = guide_legend(nrow = 1))
 ```
-Mapping some of the results 
-```{r}
-library(purrr)
-library(sf)
 
-class(all_ab_data_pop)
-
-# all_ab_data_pop should be an sf dataframe with geometry and attributes
-
-ggplot(data = all_ab_data_pop) +
-  geom_sf(aes(fill = `Antibiotics Per Person`)) +
-  scale_fill_continuous(labels = scales::label_comma())
-
-```
 
 Table containing data about antibiotic type, total number, number per person, across the 3 years and different healthboards *need to ask whether i need to use old census data for 2016 and 2020*, also need to ask if i should look at more months or just these months 
 
