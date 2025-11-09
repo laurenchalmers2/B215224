@@ -589,10 +589,10 @@ ggplot(aes(x = `Health Board`, y = Difference, fill = `Health Board`)) +
   guides(fill = guide_legend(nrow = 1))
 ```
 
-
-```{r}
+``{r}
 References:
 
 Francis, N.A., Hood, K., Lyons, R. and Butler, C.C., 2016. Understanding flucloxacillin prescribing trends and treatment non-response in UK primary care: a Clinical Practice Research Datalink (CPRD) study. Journal of Antimicrobial Chemotherapy, 71(7), pp.2037-2046.
 
 Malcolm, W., Seaton, R.A., Haddock, G., Baxter, L., Thirlwell, S., Russell, P., Cooper, L., Thomson, A. and Sneddon, J., 2020. Impact of the COVID-19 pandemic on community antibiotic prescribing in Scotland. JAC-Antimicrobial Resistance, 2(4), p.dlaa105.
+`
