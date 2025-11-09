@@ -1,20 +1,20 @@
 ---
-title: "Assessment"
+title: "Examining the differences in Antibiotic Prescriptions across Scottish health boards, before (2016), During (2020) and after (2024) Covid-19"
 output: html_document
-date: "2025-10-31"
+date: "2025-27-11"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-Loading R packages
+Loading R packages that will be needed at this point.
 ```{r}
 library(tidyverse)
 library(janitor)
 library(here)
 ```
 
-Loading 2024 data 
+Loading data from every month of 2024, 2020, and 2016 from NHS open data website, compiling of prescription datasets by prescriber location. Using read_csv function, and cleaning names to remove upper case letter and leave column and data names in the same format. Additionally filtering the data using str_detect to select only antibiotics prescribed within these healthboards. Selecting only the columns to be examined and grouping these for easier analysis.
 ```{r}
 jan_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/d3eaaf84-0f3b-4fb8-9460-e33503095fbe/download/pitc202401.csv") %>% 
   clean_names() %>% 
@@ -94,10 +94,6 @@ dec_2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a
   select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
   group_by(bnf_item_description, paid_date_month)
 
-
-```
-Loading 2020 Data 
-```{r}
 jan_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/e5c841f2-3e16-428b-97db-0798ec7a5fb4/download/pitc202001.csv") %>% 
   clean_names() %>% 
   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
@@ -169,9 +165,7 @@ dec_2020 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a
   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
   select(hbt, bnf_item_description, paid_quantity, paid_date_month) %>% 
   group_by(bnf_item_description, paid_date_month)
-```
-Loading 2016 data 
-```{r}
+
 jan_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/7c487db9-f450-4319-8b18-4b825380692b/download/pitc201601.csv") %>% 
   clean_names() %>% 
   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
@@ -243,20 +237,14 @@ dec_2016 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a
   filter(str_detect(bnf_item_description, "CILLIN")) %>% 
   select(hbt2014, bnf_item_description, paid_quantity, paid_date_month) %>% 
   group_by(bnf_item_description, paid_date_month)
+
+
 ```
 
-Loading Health Board names and population data from the census 
+Next, joining all datasets from each month of each year to produce whole year datasets. Firstly, months were combined into a list, to allow all datasets to be combined within one join function. Then months were joined into full year datasets using full join. After joining all months of each year into a single year dataset, the data was tidied to allow easier examination of the data. 
+
+Antibiotic Prescription names were renamed, so that only the antibiotic type was visible and not the prescription amount. Additionally column headings were renamed into more logical and neat names. Moreover, the years were renamed to erase the months, as onlt wanted to look at whole year statistics instead of monthly, so this allowed all months to be combined sine they had the same name now.
 ```{r}
-
-health_board_names <- read_csv("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/resource/652ff726-e676-4a20-abda-435b98dd7bdc/download/hb14_hb19.csv") %>% 
-  clean_names()
-
-population <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10) %>% 
-  clean_names()  
-```
-Joining months data form each year to produce whole year datasets 
-```{r}
-
 data_2024 <- list(jan_2024, feb_2024, mar_2024, apr_2024, may_2024, june_2024, july_2024, aug_2024, sep_2024, oct_2024, nov_2024, dec_2024) %>% 
   reduce(full_join) %>% rename(Year = paid_date_month, `Antibiotic Type` = bnf_item_description, `Prescription Number` = paid_quantity) %>% 
   mutate(
@@ -265,6 +253,7 @@ data_2024 <- list(jan_2024, feb_2024, mar_2024, apr_2024, may_2024, june_2024, j
       str_starts(`Antibiotic Type`, "BENZYL") ~ "BENZYLPENICILLIN",
       str_starts(`Antibiotic Type`, "PHENO") ~ "PHENOXYMETHYLPENICILLIN",
       str_starts(`Antibiotic Type`, "PIV") ~ "PIVMECILLINAM",
+       str_starts(`Antibiotic Type`, "PIPE") ~ "PIPERACILLIN",
       str_starts(`Antibiotic Type`, "AMPI") ~ "AMPICILLIN",
       str_starts(`Antibiotic Type`, "FLU") ~ "FLUCLOXACILLIN",
       TRUE ~ `Antibiotic Type`
@@ -276,7 +265,7 @@ data_2024 <- list(jan_2024, feb_2024, mar_2024, apr_2024, may_2024, june_2024, j
       str_starts(Year, "2016") ~ "2016",
       TRUE ~ Year)) 
 
-data_2020 <- list(jan_2020, feb_2020, mar_2024, apr_2020, may_2020, june_2020, july_2020, aug_2020, sep_2020, oct_2020, nov_2020, dec_2020) %>% 
+data_2020 <- list(jan_2020, feb_2020, mar_2020, apr_2020, may_2020, june_2020, july_2020, aug_2020, sep_2020, oct_2020, nov_2020, dec_2020) %>% 
   reduce(full_join) %>% rename(Year = paid_date_month, `Antibiotic Type` = bnf_item_description, `Prescription Number` = paid_quantity) %>% 
   mutate(
     `Antibiotic Type` = case_when(
@@ -284,6 +273,7 @@ data_2020 <- list(jan_2020, feb_2020, mar_2024, apr_2020, may_2020, june_2020, j
       str_starts(`Antibiotic Type`, "BENZYL") ~ "BENZYLPENICILLIN",
       str_starts(`Antibiotic Type`, "PHENO") ~ "PHENOXYMETHYLPENICILLIN",
       str_starts(`Antibiotic Type`, "PIV") ~ "PIVMECILLINAM",
+       str_starts(`Antibiotic Type`, "PIPE") ~ "PIPERACILLIN",
       str_starts(`Antibiotic Type`, "AMPI") ~ "AMPICILLIN",
       str_starts(`Antibiotic Type`, "FLU") ~ "FLUCLOXACILLIN",
       TRUE ~ `Antibiotic Type`
@@ -304,6 +294,7 @@ data_2016 <- list(jan_2016, feb_2016, mar_2016, apr_2016, may_2016, june_2016, j
       str_starts(`Antibiotic Type`, "BENZYL") ~ "BENZYLPENICILLIN",
       str_starts(`Antibiotic Type`, "PHENO") ~ "PHENOXYMETHYLPENICILLIN",
       str_starts(`Antibiotic Type`, "PIV") ~ "PIVMECILLINAM",
+      str_starts(`Antibiotic Type`, "PIPE") ~ "PIPERACILLIN",
       str_starts(`Antibiotic Type`, "AMPI") ~ "AMPICILLIN",
       str_starts(`Antibiotic Type`, "FLU") ~ "FLUCLOXACILLIN",
       TRUE ~ `Antibiotic Type`
@@ -318,8 +309,25 @@ data_2016 <- list(jan_2016, feb_2016, mar_2016, apr_2016, may_2016, june_2016, j
 
 ```
 
+Next Loading Health Board names, since the NHS prescription data sets only include healthboard codes, not names. Also loadinf population data from the census 2022, to join with the prescription data to allow calculation of Antibiotic prescriptions per person.
+```{r}
+health_board_names <- read_csv("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/resource/652ff726-e676-4a20-abda-435b98dd7bdc/download/hb14_hb19.csv") %>% clean_names()
 
-Joining prescription Dataset from all years, with health boards names. 
+population <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10) %>% clean_names()
+```
+
+Furthermore, population data from the census needed to be tidied as it is in a format not compatible with R. In order to compare with prescription health board data. This involved renaming the empty column as spare, renaming the columns to the same name as the other combined dataset. Additionally combining the popoulation of all age and sex groups to calculate total populations of each healthboard. 
+```{r}
+population <- population %>% 
+rename(Spare = "x6",
+         hb_name = "health_board_area_2019",
+         'Health Board Population' = count) %>% 
+  filter(age == "All people" & sex == "All people") %>% 
+         select(hb_name, 'Health Board Population' ) %>%
+        mutate(hb_name = paste("NHS", hb_name)) 
+```
+
+Joining prescription Dataset from all years, to create one big dataset for comparison between years. This was joined with health boards names to allow identification of each healthboard, by joining by healthboard codename.
 ```{r}
 data_2024 <- data_2024 %>%
   left_join(health_board_names, by = join_by(hbt == hb)) 
@@ -331,7 +339,8 @@ data_2016 <- data_2016 %>%
   left_join(health_board_names, by = join_by(hbt2014 == hb)) 
 
 ```
-Selecting and grouping columns to be examined 
+
+Next columns were selected and grouped from the combined dataset to look at trends in antibiotic prescribing across the different years. Additionally, removing rows in which healthboards hadnt supplied any antibiotic prescription data for that year. 
 ```{r}
 data_2024 <- data_2024 %>% 
   select(hb_name, `Antibiotic Type`, `Prescription Number`, Year) %>% 
@@ -356,27 +365,16 @@ data_2016 <- data_2016 %>%
 
 ```
 
-Wrangling with population data to compare with prescription health board data
-```{r}
-population <- population %>% 
-rename(Spare = "x6",
-         hb_name = "health_board_area_2019",
-         'Health Board Population' = count) %>% 
-  filter(age == "All people" & sex == "All people") %>% 
-         select(hb_name, 'Health Board Population' ) %>%
-        mutate(hb_name = paste("NHS", hb_name)) 
-  
-```
-
-Join this data together
-
+Next the datasets from each year were combined, again by using the list function to simplify the joining process into one step. 
 ```{r}
 all_ab_data <- list(data_2016, data_2020, data_2024) %>% 
   reduce(full_join) 
 ```
 
 
-Graphing ab type per healthboard per year, shows total ab prescriptions - should probs do this by person though
+This combined full data set was transformed into a graph, comparing the total number of prescriptions per eacg health board and facet-wrapped across years to determine which years showed the greatest total amount of antibiotic prescriptions. It was seen that during covid in 2020, antibiotic prescriptions decreased from 2016 before covid. This result is in line with a study conducted on the impact of covid 19 on antibiotic prescriptions, where the study measure prescription difference between 2019 and 2020. Suggesting that this could be a cause of lowered Respiratory tract infections, in which are the most common disease that antibiotics are administered for in Scotland. Lowered RI, could be as restrictions meant less socialisation and slower lifestyles, people had less oppourtunities to gain infection and generally stayed in better health. While these restrictions also reduced the number ofn people attending GP practices and subsequently receiving a dose of Antibiotics (Malcom et al., 2020). 
+
+However, antibiotic prescriptions after covid, increased, significantly, with Greater glasgow and clyde healthboard showing the greatest increase. 
 ```{r}
 library(dplyr)
 library(stringr)
@@ -403,21 +401,24 @@ all_ab_data %>%
   guides(fill = guide_legend(nrow = 1))
 ```
 
-Graphing ab types per year- measure most common tyoes rather than per person amounts *need to ask why this isnt printing
+Next a graph was produced showing the most common antibiotic types per year, to determine whether choice of Ab prescriptions has changed. It was shown that across all 3 years, Amoxicillin is the most commonly prescribed antibiotic. With phenoxymethylpenicillin second most. Additionally it can be seen that the proportion of flucloxacillin is increased in 2024. Flucloxicillin is a narrow spectrum antibiotic, as opposed to amoxicillin and phenoxymethylpenicillin which are broad spectrum. This means it targets bacteria more specifically, and in turn reduces risk of multi drig resistant bacteria. Prescriptions of this may have increased in 2024, as antibiotic resistance has developed against other commonly prescribed antibiotics. However the increased use of flucloxicillin is concerning for human health, as increased use facilitates a selection pressure for resistant bacteria to develop against it (Francis et al., 2016). 
+
+
 ```{r}
 library(ggplot2)
 library(dplyr)
 
 all_ab_data %>% 
   ggplot(aes(x = `Antibiotic Type`, y = `Prescription Number`, fill = `Antibiotic Type`)) +
-  geom_col(show.legend = TRUE) +
+  geom_col(position = "dodge") +
   labs(
     x = "Antibiotic Type", 
     y = "Antibiotic Quantity Per Health Board", 
     title = "Most Common Antibiotics Prescribed Before, During and After Covid 19 Pandemic", 
     fill = "Health Board"  # Corrected legend label to match fill aesthetic
   ) +
-  facet_wrap(~ factor(Year)) +  # Convert Year to factor for safe faceting
+  facet_wrap(~ factor(Year), scales = "free_y") + # Convert Year to factor for safe faceting
+  coord_flip() +
   theme_minimal(base_size = 14) +  # Cleaner, modern look
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1, size = 12),  # Tilt x labels
@@ -433,16 +434,26 @@ all_ab_data %>%
   ) +
   guides(fill = guide_legend(nrow = 1))
 
+
+
 ```
 
 Joining Population with prescription data, and calculating ab per person
 ```{r}
 all_ab_data_pop <-  all_ab_data %>%
   left_join(population, by = join_by('Health Board' == hb_name)) %>%
-  mutate(`Antibiotics Per Person` = `Prescription Number` / `Health Board Population`)
+  mutate(`Antibiotics Per Person` = `Prescription Number` / `Health Board Population`) %>% 
+  arrange(desc(`Prescription Number`))
 ```
 
- ab per person administered across different years per each healthboard *try and order bars from increasing to decreasing*
+Furthermore, ab per person administered across different years per each healthboard was plotted. Showing that again during covid antibiotic prescriptions per person were lower than before and after, indicating that lockdown restrictions could have contribute to either lower cases of infectious disease or less people were attending their gps to receive these prescriptions.  *try and order bars from increasing to decreasing*
+
+This combined full data set was transformed into a graph, comparing the total number of prescriptions per eacg health board and facet-wrapped across years to determine which years showed the greatest total amount of antibiotic prescriptions. It was seen that during covid in 2020, antibiotic prescriptions decreased from 2016 before covid. This result is in line with a study conducted on the impact of covid 19 on antibiotic prescriptions, where the study measure prescription difference between 2019 and 2020. Suggesting that this could be a cause of lowered Respiratory tract infections, in which are the most common disease that antibiotics are administered for in Scotland. Lowered RI, could be as restrictions meant less socialisation and slower lifestyles, people had less oppourtunities to gain infection and generally stayed in better health. While these restrictions also reduced the number ofn people attending GP practices and subsequently receiving a dose of Antibiotics (Malcom et al., 2020). 
+
+However, antibiotic prescriptions after covid, increased, significantly, with Greater glasgow and clyde healthboard showing the greatest increase. 
+*still maybe need to figure out how to add a proper legend explaining whats going on in graph 
+
+*maybe try and make scale more logical?*
 ```{r}
 all_ab_data_pop %>% 
   ggplot(aes(x = `Health Board`, y = `Antibiotics Per Person`, fill = `Antibiotic Type`)) +
@@ -467,73 +478,121 @@ all_ab_data_pop %>%
 
 ```
 
-PLot 2 but looking at which hb has biggest difference between years in prescribing *maybe work out difference across years and graph this ? as a map or diff type of graph maybe *
+
 ```{r}
-all_ab_data_pop %>% 
-  ggplot(aes(x = Year, y = `Antibiotics Per Person`, fill = `Antibiotic Type`)) +
-  geom_col(show.legend = TRUE) +
-  labs(
-    x = "Year", 
-    y = "Antibiotic Quantity Per Person", 
-    title = "Different in Number of Antibiotics Prescribed per person, Before, During and After Covid 19 Pandemic", 
-    fill = "Antibiotic Type") +
-  facet_wrap(~`Health Board`) +
-  theme_minimal(base_size = 14) +  # Cleaner, more modern look
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12), # Tilt x-axis labels for readability
-    axis.text.y = element_text(size = 12),
-    axis.title = element_text(face = "bold", size = 14),
-    plot.title = element_text(face = "bold", size = 16, hjust = 0),
-    legend.position = "bottom",  # Move legend below plot
-    legend.title = element_text(face = "bold", size = 13),
-    legend.text = element_text(size = 12),
-    panel.grid.major = element_line(color = "grey85"),
-    panel.grid.minor = element_blank(),
-    strip.text = element_text(face = "bold", size = 13)) +
-  guides(fill = guide_legend(nrow = 1))
+all_ab_data_pop <- all_ab_data_pop %>% 
+  mutate(`Year` = as.numeric(`Year`))
+
+ab_differences <- all_ab_data_pop %>%
+  pivot_wider(names_from = Year, values_from = `Antibiotics Per Person`)
+
+ab_differences_total <- all_ab_data %>%
+  pivot_wider(names_from = Year, values_from = `Prescription Number`)
+
+
 ```
 
+Calculating differences from these columns, must make numeric co *need to ask for help with this*
 
-Table containing data about antibiotic type, total number, number per person, across the 3 years and different healthboards *need to ask whether i need to use old census data for 2016 and 2020*, also need to ask if i should look at more months or just these months 
+As then i could explain that the differences could be due to different council restrictions across scotland ecompassing different healtnboard values sen across the years. *where is my code for this?*
+```{r}
+library(dplyr)
+library(tidyr)
+
+ab_differences_total <- ab_differences_total %>%
+  mutate(across(c(`2016`, `2020`, `2024`), ~ as.numeric(.))) %>%
+  mutate(`Difference Between 2016 and 2020` = `2016` - `2020`, `Difference Between 2024 and 2020` = `2024` - `2020`) %>%
+  pivot_longer(cols = starts_with("Difference Between"), names_to = "Comparison", values_to = "Difference") %>%
+  mutate(Comparison = gsub("Difference Between ", "", Comparison))
+
+
+```
+Table containing data about antibiotic type, total number, number per person, across the 3 years and different healthboards *why is year coming up more tgan once in some* but doesnt in the actual data set? *need to ask about this * 
 
 ```{r}
 library(gt)
 
 all_ab_data_pop %>%
-  select(Year, `Health Board`, `Antibiotic Type`, `Prescription Number`, `Antibiotics Per Person` ) %>%
-  gt() %>%
-   cols_label(`Health Board` = "Health Board", Year = "Year", `Prescription Number` = "Prescription Number", `Antibiotic Type` = "Antibiotic Type") %>% 
-   cols_align(align = "left",
-              columns = Year)
-    tab_header(title = "Antibiotic Prescriptions Before, During and After Covid-19",
-    subtitle = "Data from scottish health boards 2016, 2020, 2024") %>% 
-    fmt_number(columns = vars(`Prescription Number`), use_seps = TRUE) %>% 
-      summary_rows(columns = c(`Antibiotics Per Person`, `Prescription Number`), 
-               fns = list(Average = ~mean(., na.rm = TRUE))) %>% 
-  grand_summary_rows(columns = c(`Antibiotics Per Person`, `Prescription Number`), 
-                     fns = list("Overall Average" = ~mean(., na.rm = TRUE)))
-    
-    
-    
-
-all_ab_data_pop %>%
-  select(Year, `Health Board`, `Antibiotic Type`, `Prescription Number`, `Antibiotics Per Person`) %>%
+  arrange(desc(Year)) %>% 
+  group_by(Year, `Health Board`) %>% 
+  select(Year, `Health Board`, `Antibiotic Type`, `Prescription Number`, `Health Board Population`, `Antibiotics Per Person`) %>%
   gt() %>%
   cols_label(
-    Year = "Year",
-    `Health Board` = "Health Board",
-    `Antibiotic Type` = "Antibiotic Type",
-    `Prescription Number` = "Prescription Number",
-    `Antibiotics Per Person` = "Antibiotics per Person"
-  ) %>%
-  cols_align(
-    align = "left",
-    columns = vars(Year)
-  ) %>%
+    `Health Board` = "Health Board", 
+    Year = "Year", 
+    `Prescription Number` = "Prescription Number", 
+    `Antibiotic Type` = "Antibiotic Type"
+  ) %>% 
+  cols_align(align = "left", columns = c(Year)) %>% 
   tab_header(
     title = "Antibiotic Prescriptions Before, During and After Covid-19",
-    subtitle = "Data from Scottish Health Boards 2016, 2020, 2024")
-
-
+    subtitle = "Data from Scottish health boards 2016, 2020, 2024"
+  ) %>% 
+  fmt_number(columns = c(`Prescription Number`), use_seps = TRUE) %>% 
+  summary_rows(columns = c(`Antibiotics Per Person`), fns = list(Average = ~mean(., na.rm = TRUE))) %>% 
+  grand_summary_rows(columns = c(`Antibiotics Per Person`), fns = list("Overall Average" = ~mean(., na.rm = TRUE))) %>%
+  tab_style(
+    style = cell_fill(color = "red"),
+    locations = cells_body(columns = c(`Antibiotic Type`), rows = `Antibiotic Type` == "AMOXICILLIN")
+  ) %>%
+  tab_style(
+    style = cell_fill(color = "skyblue"),
+    locations = cells_body(columns = c(`Antibiotic Type`), rows = `Antibiotic Type` == "PHENOXYMETHYLPENICILLIN")
+  ) %>%
+  tab_style(
+    style = cell_fill(color = "turquoise"),
+    locations = cells_body(columns = c(`Antibiotic Type`), rows = `Antibiotic Type` == "FLUCLOXACILLIN")
+  ) %>%
+  tab_style(
+    style = cell_fill(color = "magenta"),
+    locations = cells_body(columns = c(`Antibiotic Type`), rows = `Antibiotic Type` == "PIVMECILLINAM")
+  ) %>%
+  tab_style(
+    style = cell_fill(color = "lightgreen"),
+    locations = cells_body(columns = c(`Antibiotic Type`), rows = `Antibiotic Type` == "BENZYLPENICILLIN")
+  ) %>%
+  tab_style(
+    style = cell_fill(color = "yellow"),
+    locations = cells_body(columns = c(`Antibiotic Type`), rows = `Antibiotic Type` == "AMPICILLIN")
+  ) %>%
+  tab_style(
+    style = cell_fill(color = "purple"),
+    locations = cells_body(columns = c(`Antibiotic Type`), rows = `Antibiotic Type` == "PIPERACILLIN")
+  )
 
 ```
 
+
+Plotting the difference in Antibiotic prescriptions per person across different healthboards between beforer and during and after and during covid. 
+
+```{r}
+ab_differences_total %>% 
+ggplot(aes(x = `Health Board`, y = Difference, fill = `Health Board`)) +
+  geom_col() +
+  facet_wrap(~ Comparison) +
+  labs(x = "Health Board", y = "Difference in Antibiotic Prescriptions per Person",
+    title = "Differences in Number of Antibiotics Prescribed per Person",
+    fill = "Health Board") +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(face = "bold", size = 14),
+    plot.title = element_text(face = "bold", size = 16, hjust = 0),
+    legend.position = "bottom",
+    legend.title = element_text(face = "bold", size = 13),
+    legend.text = element_text(size = 12),
+    panel.grid.major = element_line(color = "grey85"),
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold", size = 13)
+  ) +
+  guides(fill = guide_legend(nrow = 1))
+```
+
+
+```{r}
+References:
+
+Francis, N.A., Hood, K., Lyons, R. and Butler, C.C., 2016. Understanding flucloxacillin prescribing trends and treatment non-response in UK primary care: a Clinical Practice Research Datalink (CPRD) study. Journal of Antimicrobial Chemotherapy, 71(7), pp.2037-2046.
+
+Malcolm, W., Seaton, R.A., Haddock, G., Baxter, L., Thirlwell, S., Russell, P., Cooper, L., Thomson, A. and Sneddon, J., 2020. Impact of the COVID-19 pandemic on community antibiotic prescribing in Scotland. JAC-Antimicrobial Resistance, 2(4), p.dlaa105.
