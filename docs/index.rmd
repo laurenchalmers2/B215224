@@ -8,21 +8,29 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 Loading R packages that will be needed at this point. Tidyverse needed for most functions, ggplot etc. Purr needed to make own function, janitor needed to 
 ```{r}
+#packages required for analysing prescription data
 library(tidyverse)
 library(janitor)
 library(here)
 library(purrr)
 ```
-loading data, using function, and filtering for desired df
+Created own function to load data from every month of 2024, 2020, and 2016 from NHS open data website, compiling of prescription datasets by prescriber location. Using read_csv function, and cleaning names to remove upper case letter and leave column and data names in the same format. Additionally filtering the data using str_detect to select only antibiotics prescribed within these healthboards. Selecting only the columns to be examined and grouping these for easier analysis. 
+
+Next, joining all datasets from each month of each year to produce whole year datasets. Firstly, months were combined into a list, to allow all datasets to be combined within one join function. Then months were joined into full year datasets using full join. After joining all months of each year into a single year dataset, the data was tidied to allow easier examination of the data. 
+
+Antibiotic Prescription names were renamed, so that only the antibiotic type was visible and not the prescription amount. Additionally column headings were renamed into more logical and neat names. Moreover, the years were renamed to erase the months, as only wanted to look at whole year statistics instead of monthly, so this allowed all months to be combined sine they had the same name now.
 ```{r}
+#putting all urls into a vecotor, in order to load and tidy all data in one function
 set_of_urls <- c("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/7c487db9-f450-4319-8b18-4b825380692b/download/pitc201601.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/0727befa-5530-4c1d-aff0-ccb7554eff7a/download/pitc201602.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/20ad9575-4bd7-4bf4-af41-fd36071e2301/download/pitc201603.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/e44eb789-b8e0-41d9-a264-eba18b2d2473/download/pitc201604.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/90ebb5ed-bc22-4bbc-8915-d55ae9d9906e/download/pitc201605.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/a636862a-77e0-4c97-ba97-268578534a8e/download/pitc201606.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/c12c905b-3a2d-4b7a-b5d2-8c359b786beb/download/pitc201607.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/bbd1d028-b9c6-4a28-b579-eafcaaa44703/download/pitc201608.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/2e0d6f14-3752-4c42-9a02-34d867132737/download/pitc201609.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/f22c20c1-6066-4f7d-a939-3ae654d1467a/download/pitc201610.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/5d421ba3-ccba-4d98-9772-e2e042b29a0f/download/pitc201611.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/597ea4bc-f733-45b6-8a60-5d7a6ac4824c/download/pitc201612.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/e5c841f2-3e16-428b-97db-0798ec7a5fb4/download/pitc202001.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/af121e7c-4124-4955-92e9-a9580ccd469e/download/pitc202002.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/9581bd8d-5568-4462-93a6-6d7bfbbe7cbc/download/pitc202003.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/9cdc0526-21ab-43de-b832-bc032cd31b24/download/pitc202004.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/f2ffa7b3-3f93-470a-8125-880afb9aafe0/download/pitc202005.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/64131d22-ab47-43ff-9674-ebe8ed7edbd7/download/pitc202006.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/80b6ddb1-f09b-4d76-9927-da1e118b01ff/download/pitc202007.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/5fd5f56e-d1d2-4f22-b4f7-224fbd50dca3/download/pitc202008.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/e1b0cfdd-d184-4ebc-bd93-f1a10d84ead0/download/pitc202009.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/83bf4892-d246-41f8-a6ca-d44d18e2a2ca/download/pitc202010.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/ab8aa642-2562-4abb-a360-5c5f9e7e349c/download/pitc202011.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/0c033702-4d88-4f2d-989c-a709b1f4529e/download/pitc202012.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/f0df380b-3f9b-4536-bb87-569e189b727a/download/hb_pitc2024_01_06-1.csv", "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/f3b9f2e2-66c0-4310-9b8e-734781d2ed0a/download/hb_pitc2024_07_12-1.csv")
 
+#example url to test function with
 example_url <- c("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/0727befa-5530-4c1d-aff0-ccb7554eff7a/download/pitc201602.csv")
 
+#function made in order to run all prescription data sets at once, renaming health board code columns to be all same since data from 2016 has a different names, and was changed before 2020 and 2024 data
 process_csv <- function(url) {
   prescription_data <- read_csv(url) %>% clean_names() %>% 
  rename_with(.fn = ~ ifelse(.x %in% c("hbt2014", "hbt"), "hb", .x))
-  
+#within function, arguments allow filtering, grouping and renaming of data to produce a dataframe that is includes all data to be examined
 prescription_data <- prescription_data %>% 
  rename(year = paid_date_month, antibiotic_type = bnf_item_description, prescription_number = paid_quantity) %>%
     select(hb, antibiotic_type, prescription_number, year) %>%
@@ -37,10 +45,13 @@ example <- process_csv(example_url)
 combined_prescription_data <- map_dfr(set_of_urls, process_csv)
 
 ```
-loading hb_names and population data, tidying and joining with prescription data
-```{r}
-health_board_names <- read_csv("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/resource/652ff726-e676-4a20-abda-435b98dd7bdc/download/hb14_hb19.csv") %>% clean_names()
+Next Loading Health Board names, since the NHS prescription data sets only include healthboard codes, not names. Also loadinf population data from the census 2022, to join with the prescription data to allow calculation of Antibiotic prescriptions per person.
 
+Furthermore, population data from the census needed to be tidied as it is in a format not compatible with R. In order to compare with prescription health board data. This involved renaming the empty column as spare, renaming the columns to the same name as the other combined dataset. Additionally combining the popoulation of all age and sex groups to calculate total populations of each healthboard. 
+```{r}
+#loading healthboard names data, and cleaning names to change uppercase to lower case with underscores seperating words instead of spaces
+health_board_names <- read_csv("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/resource/652ff726-e676-4a20-abda-435b98dd7bdc/download/hb14_hb19.csv") %>% clean_names()
+#loading and tidying population data from the census, skip 10 allows only the data to be read since data isnt in the first 10 lines. Renaming columns to logical names in line with other datasets to join efficiently. Ignoring age and sex arguments, so all values can be added to calculate total populations of each healthboard. Adding NHS before all health board names, as in the format in healthboard names data set
 population <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10) %>% 
   clean_names() %>% 
   rename(Spare = "x6",
@@ -49,36 +60,229 @@ population <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10
   filter(age == "All people" & sex == "All people") %>% 
          select(hb_name, health_board_population) %>%
         mutate(hb_name = paste("NHS", hb_name)) 
+#join prescription data with healthboard names and populationd data, selecting columns to be examined, calculating number of antibiotics prescribed per person
+ #adding together total prescription numbers of the same antibiotics from the same healthboard, so an accurate determination can be made on the number of antibiotics administered per person
+  #allows initial visualisation on which healthboard administered the most antibiotics per person, what type this is and in what year it happened.
 
 all_prescription_and_hb_data <- combined_prescription_data %>% 
   full_join(health_board_names) %>% 
   full_join(population) %>% 
-  select(year, antibiotic_type, prescription_number, hb_name, health_board_population)
+  filter(!is.na(hb_name)) %>%
+  group_by(antibiotic_type, year, hb_name, health_board_population) %>% 
+  summarise(prescription_number = sum(prescription_number, na.rm = TRUE)) %>% 
+  mutate(antibiotics_per_person = prescription_number / health_board_population) %>% 
+  ungroup() %>%  # Important: ungroup before arranging
+  arrange(year, antibiotic_type, desc(antibiotics_per_person))  # Sort by year, then antibiotic, then value, group and soer again after to keep ab types together for for better table layout
 ```
-plot of prescription numbers across health boards each year
+I want to make all my graphs have the same theme, same colour palettes, font size, legend layout etc
 ```{r}
-library(dplyr)
-library(stringr)
+my_theme <- function() {
+  list(theme_minimal(base_size = 14),
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12), axis.text.y = element_text(size = 12), axis.title = element_text(face = "bold", size = 14), plot.title = element_text(face = "bold", size = 16, hjust = 0), legend.position = "bottom", legend.title = element_text(face = "bold", size = 13), legend.text = element_text(size = 12), panel.grid.major = element_line(color = "grey85"), panel.grid.minor = element_blank(), strip.text = element_text(face = "bold", size = 13)),guides(fill = guide_legend(nrow = 1)))
+}
+
+```
+
+
+This combined full data set was transformed into a graph, comparing the total number of prescriptions per head in each health board and facet-wrapped across years to determine which years showed the greatest total amount of antibiotic prescriptions. It was seen that during covid in 2020, antibiotic prescriptions decreased from 2016 before covid. This result is in line with a study conducted on the impact of Covid 19 on antibiotic prescriptions, where the study measure prescription difference between 2019 and 2020 (Malcom et al., 2020). Suggesting that this could be a cause of lowered Respiratory tract infections, in which are the most common disease that antibiotics are administered for in Scotland. Lowered RI, could be as restrictions meant less socialisation and slower lifestyles, people had less oppourtunities to gain infection and generally stayed in better health (Malcom et al., 2020). While these restrictions also reduced the number ofn people attending GP practices and subsequently receiving a dose of Antibiotics (Malcom et al., 2020). 
+
+ *try and order bars from increasing to decreasing*
+
+However, antibiotic prescriptions after covid, increased, significantly, with Greater glasgow and clyde healthboard showing the greatest increase. 
+
+```{r}
+library(forcats) #needed to reorder bars 
+library(tidytext) #needed for scale_reordered
+
+#ggplot using full dataset, analysing the number of antibiotics adminstered per healthboard each year
 all_prescription_and_hb_data %>% 
-  ggplot(aes(x = hb_name, y = prescription_number, fill = antibiotic_type)) +
+  group_by(year, hb_name) %>%
+  mutate(total_per_hb = sum(antibiotics_per_person)) %>%  # Calculate total for ordering
+  ungroup() %>%
+  ggplot(aes(x = reorder_within(hb_name, total_per_hb, year), 
+             y = antibiotics_per_person, 
+             fill = antibiotic_type)) +
+  geom_col(show.legend = TRUE) + # means legend can be seen, allowing you to identify what the different colours mean
+  scale_x_reordered() +  # This cleans up the x-axis labels
+  labs(x = "Health Board Name", 
+    y = "Antibiotic Quantity Per Head in each Health Board", 
+    title = "Different in Number of Antibiotics Prescribed per Health Board, Before, During and After Covid 19 Pandemic", 
+    fill = "Antibiotic Type") + #giving axes and plot titles
+  facet_wrap(~year, scales = "free_x") + 
+   scale_fill_brewer(palette = "Set2") +
+  my_theme()#so a comparison can be seen between years, scale allows each year to have 
+  
+
+```
+
+Next a graph was produced showing the most common antibiotic types per year, to determine whether choice of Ab prescriptions has changed. It was shown that across all 3 years, Amoxicillin is the most commonly prescribed antibiotic. With phenoxymethylpenicillin second most. Additionally it can be seen that the proportion of flucloxacillin is increased in 2024. Flucloxicillin is a narrow spectrum antibiotic, as opposed to amoxicillin and phenoxymethylpenicillin which are broad spectrum. This means it targets bacteria more specifically, and in turn reduces risk of multi drig resistant bacteria. Prescriptions of this may have increased in 2024, as antibiotic resistance has developed against other commonly prescribed antibiotics. However the increased use of flucloxicillin is concerning for human health, as increased use facilitates a selection pressure for resistant bacteria to develop against it (Francis et al., 2016). *maybe reorder bars*
+```{r}
+library(ggplot2)
+library(dplyr)
+#ggplot examining different antibiotic types prescribed in different healthboards
+all_prescription_and_hb_data %>% 
+  ggplot(aes(x = antibiotic_type, y = antibiotics_per_person, fill = antibiotic_type)) +
+  geom_col(position = "dodge") +
+  labs(
+    x = "Antibiotic Type", 
+    y = "Antibiotic Quantity Per Head in each Health Board", 
+    title = "Most Common Antibiotics Prescribed Before, During and After Covid 19 Pandemic", 
+    fill = "Health Board"  # Corrected legend label to match fill aesthetic
+  ) +
+  facet_wrap(~ factor(year), scales = "free_y") + # Convert Year to factor for safe faceting, scale set to logical scale
+  coord_flip() +
+  scale_fill_brewer(palette = "Set2") + my_theme()
+```
+Since it could be seen that the number of antibiotics administered per person did change with covid 19, next the scale at which these differences occured was examined to determine which healthboard may hev had the greatest covid impact on prescribing practices.
+```{r}
+# Aggregate first, then pivot
+ab_differences <- all_prescription_and_hb_data %>%
+  group_by(year, hb_name, antibiotic_type) %>%
+  summarise(antibiotics_per_person = sum(antibiotics_per_person, na.rm = TRUE), .groups = "drop") %>%  # Sum up any duplicates
+  pivot_wider(names_from = year, values_from = antibiotics_per_person, id_cols = c(hb_name, antibiotic_type)) %>%
+  mutate(across(c(`2016`, `2020`, `2024`), ~ as.numeric(.))) %>% # Ensure numeric) 
+  mutate(difference_2024_2020 = `2024` - `2020`,
+    difference_2016_2020 = `2016` - `2020`) %>%
+  filter(!is.na(`2016`) & !is.na(`2020`) & !is.na(`2024`)) %>% 
+  pivot_longer(cols = starts_with("difference"),  # Select all difference columns
+    names_to = "comparison",            # Column name for the comparison type
+    values_to = "difference") %>%
+  mutate(comparison = case_when(comparison == "difference_2024_2020" ~ "2024 vs 2020",
+      comparison == "difference_2016_2020" ~ "2016 vs 2020", TRUE ~ comparison))
+```
+#Calculating differences from these columns, must make numeric co 
+
+```{r}
+#option making my own colour pallette to match the other grapohs that has more than 8 layers for all different health boards library(RColorBrewer)
+
+library(RColorBrewer)
+# Create a custom palette with 14+ colors
+my_colors <- colorRampPalette(brewer.pal(8, "Set2"))(14)
+```
+Graph exploring differences between each year across healthboards to analyse which had the biggest effect from covid 19. 
+```{r}
+ab_differences %>% 
+  ggplot(aes(x = hb_name, y = difference, fill = hb_name)) +
   geom_col(show.legend = TRUE) +
   labs(x = "Health Board Name", 
-    y = "Antibiotic Quantity Per Health Board", 
-    title = "Different in Number of Antibiotics Prescribed per Health Board, Before, During and After Covid 19 Pandemic", 
+    y = "Change in Antibiotic Quantity Per Person", 
+    title = "Difference in Number of Antibiotics Prescribed per person, Before, During and After Covid 19 Pandemic", 
     fill = "Antibiotic Type") +
-  facet_wrap(~year) +
-  theme_minimal(base_size = 14) +  # Cleaner, more modern look
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12), # Tilt x-axis labels for readability
-    axis.text.y = element_text(size = 12),
-    axis.title = element_text(face = "bold", size = 14),
-    plot.title = element_text(face = "bold", size = 16, hjust = 0),
-    legend.position = "bottom",  # Move legend below plot
-    legend.title = element_text(face = "bold", size = 13),
-    legend.text = element_text(size = 12),
-    panel.grid.major = element_line(color = "grey85"),
-    panel.grid.minor = element_blank(),
-    strip.text = element_text(face = "bold", size = 13)) +
-  guides(fill = guide_legend(nrow = 1))
+  facet_wrap(~comparison) +
+ scale_fill_manual(values = my_colors) +
+  my_theme()
 ```
 
 
+Table containing data about antibiotic type, total number, number per person, across the 3 years and different healthboards 
+```{r}
+
+#loading package needed for creating a table
+library(gt)
+# table of all data examined
+all_prescription_and_hb_data %>%
+  select(year, hb_name, antibiotic_type, prescription_number, health_board_population, antibiotics_per_person) %>%  # Move select before gt()
+  gt(groupname_col = "year") %>%  # Group by year instead
+  cols_label(
+    hb_name = "Health Board", 
+    antibiotic_type = "Antibiotic Type", 
+    prescription_number = "Prescription Number", 
+    health_board_population = "Health Board Population",
+    antibiotics_per_person = "Antibiotics Per Person"
+  ) %>% 
+  tab_header(
+    title = "Antibiotic Prescriptions Before, During and After Covid-19", 
+    subtitle = "Data from Scottish health boards 2016, 2020, 2024"
+  ) %>% 
+  fmt_number(columns = c(prescription_number, health_board_population), use_seps = TRUE) %>%
+  tab_style(
+    style = cell_fill(color = "lightblue"),#could add my own color palette in here
+    locations = cells_row_groups()
+  ) %>%
+  data_color(
+    columns = antibiotic_type, 
+    method = "factor", 
+    palette = "Set2"
+  ) %>%  
+  summary_rows(
+    groups = TRUE,
+    columns = c(antibiotics_per_person), 
+    fns = list(Average = ~mean(., na.rm = TRUE))
+  ) %>% 
+  grand_summary_rows(
+    columns = c(antibiotics_per_person), 
+    fns = list("Overall Average" = ~mean(., na.rm = TRUE))
+  )
+```
+
+```{r}
+#loading package needed for creating a table
+library(gt)
+# table of all data examined
+all_prescription_and_hb_data %>%
+  arrange(year, antibiotic_type, hb_name) %>%  # Sort by year, then antibiotic type
+  select(year, antibiotic_type, hb_name, prescription_number, health_board_population, antibiotics_per_person) %>%
+  gt(groupname_col = "year", rowname_col = "antibiotic_type") %>%  # Group by year and antibiotic type
+  cols_label(
+    hb_name = "Health Board", 
+    prescription_number = "Prescription Number", 
+    health_board_population = "Health Board Population",
+    antibiotics_per_person = "Antibiotics Per Person"
+  ) %>% 
+  tab_header(
+    title = "Antibiotic Prescriptions Before, During and After Covid-19", 
+    subtitle = "Data from Scottish health boards 2016, 2020, 2024"
+  ) %>% 
+  fmt_number(columns = c(prescription_number, health_board_population), use_seps = TRUE) %>%
+  tab_style(
+    style = cell_fill(color = "lightblue"),
+    locations = cells_row_groups()
+  ) %>%
+  summary_rows(
+    groups = TRUE,
+    columns = c(antibiotics_per_person), 
+    fns = list(Average = ~mean(., na.rm = TRUE))
+  ) %>% 
+  grand_summary_rows(
+    columns = c(antibiotics_per_person), 
+    fns = list("Overall Average" = ~mean(., na.rm = TRUE))
+  )
+```
+
+```{r}
+references <- tibble(
+  References = c(
+    "Francis, N.A., Hood, K., Lyons, R. and Butler, C.C., 2016. Understanding flucloxacillin prescribing trends and treatment non-response in UK primary care: a Clinical Practice Research Datalink (CPRD) study. Journal of Antimicrobial Chemotherapy, 71(7), pp.2037-2046.",
+    "Salcolm, W., Seaton, R.A., Haddock, G., Baxter, L., Thirlwell, S., Russell, P., Cooper, L., Thomson, A. and Sneddon, J., 2020. Impact of the COVID-19 pandemic on community antibiotic prescribing in Scotland. JAC-Antimicrobial Resistance, 2(4), p.dlaa105."
+  )
+)
+
+references %>%
+  gt() %>%
+  tab_header(
+    title = "References",
+    subtitle = "Harvad Formatted"
+  ) %>%
+  tab_style(
+    style = cell_fill(color = "#f0f0f0"),
+    locations = cells_body()
+  ) %>%
+  tab_style(
+    style = list(
+      cell_fill(color = "lightblue"),
+      cell_text(color = "white", weight = "bold")
+    ),
+    locations = cells_title(groups = "title")
+  ) %>%
+  tab_options(
+    table.width = pct(100),
+    table.border.top.color = "lightblue",
+    table.border.bottom.color = "lightblue"
+  )
+```
+
+References:
+
+Francis, N.A., Hood, K., Lyons, R. and Butler, C.C., 2016. Understanding flucloxacillin prescribing trends and treatment non-response in UK primary care: a Clinical Practice Research Datalink (CPRD) study. Journal of Antimicrobial Chemotherapy, 71(7), pp.2037-2046.
+
+Malcolm, W., Seaton, R.A., Haddock, G., Baxter, L., Thirlwell, S., Russell, P., Cooper, L., Thomson, A. and Sneddon, J., 2020. Impact of the COVID-19 pandemic on community antibiotic prescribing in Scotland. JAC-Antimicrobial Resistance, 2(4), p.dlaa105.
