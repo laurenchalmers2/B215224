@@ -3,6 +3,8 @@ title: "Examining the differences in Antibiotic Prescriptions across Scottish he
 output: html_document
 date: "2025-14-11"
 ---
+This analysis will examine the difference in antibiotic prescriptions across Scottish Healthboards, and how these were affected by the Covid-19 Pandemic. To assess this, prescription data from all scottish healthboards was examined from 2024 (4 years after the pandemic began), 2020 (during the pandemic), and 2016 (4 years before the pandemic), to view how the number and types of antibiotics prescribed changed over time. Looking into antbiotic prescribing patterns is particularly important, as currently AMR (Antimicrobial Resistance), is a pressing topic of dicussion, as it continues to rise due to inappropriate and overuse of antibiotics, often due to careless prescribing across healthboards.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
@@ -80,15 +82,12 @@ my_theme <- function() {
   list(theme_minimal(base_size = 14),
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12), axis.text.y = element_text(size = 12), axis.title = element_text(face = "bold", size = 14), plot.title = element_text(face = "bold", size = 16, hjust = 0), legend.position = "bottom", legend.title = element_text(face = "bold", size = 13), legend.text = element_text(size = 12), panel.grid.major = element_line(color = "grey85"), panel.grid.minor = element_blank(), strip.text = element_text(face = "bold", size = 13)),guides(fill = guide_legend(nrow = 1)))
 }
-
 ```
+This combined full data set was transformed into a graph, comparing the total number of prescriptions per head in each health board and facet-wrapped across years to determine which years showed the greatest total amount of antibiotic prescriptions. It was seen that during covid in 2020, antibiotic prescriptions decreased from 2016 before Covid. This result is in line with a study conducted on the impact of Covid 19 on antibiotic prescriptions, where the study measure prescription difference between 2019 and 2020 (Malcom et al., 2020). Suggesting that this could be a cause of lowered Respiratory tract infections, in which are the most common disease that antibiotics are administered for in Scotland. Lowered RI, could be as restrictions meant less socialisation and slower lifestyles, people had less oppourtunities to gain infection and generally stayed in better health (Malcom et al., 2020). While these restrictions also reduced the number of people attending GP practices and subsequently receiving a dose of Antibiotics (Malcom et al., 2020). 
 
+This reduction in antibiotic prescribing could have been due to less inappropriate prescriptions being handed out across scottish healthboards. Fewer visits to GPs, means that less antibiotics may have been given for the treatment of conditions that don't actually require it. Such as certain upper respiratory tract conditions. A study completed in England, revealed the percentage of antibiotics given out for treating this that are deemed inappropriate is 69.6%. Though this study focuses on antibiotic prescribing patterns in Scotland, the NHS is the premis of both of these healthboards so similar trends could be expected (Zhong et al., 2023). 
 
-This combined full data set was transformed into a graph, comparing the total number of prescriptions per head in each health board and facet-wrapped across years to determine which years showed the greatest total amount of antibiotic prescriptions. It was seen that during covid in 2020, antibiotic prescriptions decreased from 2016 before covid. This result is in line with a study conducted on the impact of Covid 19 on antibiotic prescriptions, where the study measure prescription difference between 2019 and 2020 (Malcom et al., 2020). Suggesting that this could be a cause of lowered Respiratory tract infections, in which are the most common disease that antibiotics are administered for in Scotland. Lowered RI, could be as restrictions meant less socialisation and slower lifestyles, people had less oppourtunities to gain infection and generally stayed in better health (Malcom et al., 2020). While these restrictions also reduced the number ofn people attending GP practices and subsequently receiving a dose of Antibiotics (Malcom et al., 2020). 
-
- *try and order bars from increasing to decreasing*
-
-However, antibiotic prescriptions after covid, increased, significantly, with Greater glasgow and clyde healthboard showing the greatest increase. 
+*However, antibiotic prescriptions after covid, increased, significantly, with Greater glasgow and clyde healthboard showing the greatest increase* 
 
 ```{r}
 library(forcats) #needed to reorder bars 
@@ -115,7 +114,7 @@ all_prescription_and_hb_data %>%
 
 ```
 
-Next a graph was produced showing the most common antibiotic types per year, to determine whether choice of Ab prescriptions has changed. It was shown that across all 3 years, Amoxicillin is the most commonly prescribed antibiotic. With phenoxymethylpenicillin second most. Additionally it can be seen that the proportion of flucloxacillin is increased in 2024. Flucloxicillin is a narrow spectrum antibiotic, as opposed to amoxicillin and phenoxymethylpenicillin which are broad spectrum. This means it targets bacteria more specifically, and in turn reduces risk of multi drig resistant bacteria. Prescriptions of this may have increased in 2024, as antibiotic resistance has developed against other commonly prescribed antibiotics. However the increased use of flucloxicillin is concerning for human health, as increased use facilitates a selection pressure for resistant bacteria to develop against it (Francis et al., 2016). *maybe reorder bars*
+Next a graph was produced showing the most common antibiotic types per year, to determine whether choice of Ab prescriptions has changed. It was shown that across all 3 years, Amoxicillin is the most commonly prescribed antibiotic. With phenoxymethylpenicillin second most. Additionally it can be seen that the proportion of flucloxacillin is increased in 2024. Flucloxicillin is a narrow spectrum antibiotic, as opposed to amoxicillin and phenoxymethylpenicillin which are broad spectrum. This means it targets bacteria more specifically, and in turn reduces risk of multi drig resistant bacteria. Prescriptions of this may have increased in 2024, as antibiotic resistance has developed against other commonly prescribed antibiotics. However the increased use of flucloxicillin is concerning for human health, as increased use facilitates a selection pressure for resistant bacteria to develop against it (Francis et al., 2016). 
 ```{r}
 library(ggplot2)
 library(dplyr)
@@ -148,12 +147,13 @@ ab_differences <- all_prescription_and_hb_data %>%
     names_to = "comparison",            # Column name for the comparison type
     values_to = "difference") %>%
   mutate(comparison = case_when(comparison == "difference_2024_2020" ~ "2024 vs 2020",
-      comparison == "difference_2016_2020" ~ "2016 vs 2020", TRUE ~ comparison))
+      comparison == "difference_2016_2020" ~ "2016 vs 2020", TRUE ~ comparison)) %>% 
+  arrange(desc(difference))
 ```
 #Calculating differences from these columns, must make numeric co 
 
 ```{r}
-#option making my own colour pallette to match the other grapohs that has more than 8 layers for all different health boards library(RColorBrewer)
+#option making my own colour palette to match the other grapohs that has more than 8 layers for all different health boards library(RColorBrewer)
 
 library(RColorBrewer)
 # Create a custom palette with 14+ colors
@@ -161,7 +161,8 @@ my_colors <- colorRampPalette(brewer.pal(8, "Set2"))(14)
 ```
 Graph exploring differences between each year across healthboards to analyse which had the biggest effect from covid 19. 
 ```{r}
-ab_differences %>% 
+ab_differences %>%
+  mutate(hb_name = fct_reorder(hb_name, difference)) %>%
   ggplot(aes(x = hb_name, y = difference, fill = hb_name)) +
   geom_col(show.legend = TRUE) +
   labs(x = "Health Board Name", 
@@ -173,112 +174,51 @@ ab_differences %>%
   my_theme()
 ```
 
-
 Table containing data about antibiotic type, total number, number per person, across the 3 years and different healthboards 
 ```{r}
-
-#loading package needed for creating a table
 library(gt)
-# table of all data examined
 all_prescription_and_hb_data %>%
-  select(year, hb_name, antibiotic_type, prescription_number, health_board_population, antibiotics_per_person) %>%  # Move select before gt()
-  gt(groupname_col = "year") %>%  # Group by year instead
+  select(year, hb_name, antibiotic_type, prescription_number, health_board_population, antibiotics_per_person) %>%
+  gt(groupname_col = "year") %>%
   cols_label(
-    hb_name = "Health Board", 
-    antibiotic_type = "Antibiotic Type", 
-    prescription_number = "Prescription Number", 
+    hb_name = "Health Board",
+    antibiotic_type = "Antibiotic Type",
+    prescription_number = "Prescription Number",
     health_board_population = "Health Board Population",
     antibiotics_per_person = "Antibiotics Per Person"
-  ) %>% 
+  ) %>%
   tab_header(
-    title = "Antibiotic Prescriptions Before, During and After Covid-19", 
+    title = "Antibiotic Prescriptions Before, During and After Covid-19",
     subtitle = "Data from Scottish health boards 2016, 2020, 2024"
-  ) %>% 
+  ) %>%
   fmt_number(columns = c(prescription_number, health_board_population), use_seps = TRUE) %>%
   tab_style(
-    style = cell_fill(color = "lightblue"),#could add my own color palette in here
-    locations = cells_row_groups()
+    style = cell_text(weight = "bold"),
+    locations = cells_title(groups = "title")
   ) %>%
-  data_color(
-    columns = antibiotic_type, 
-    method = "factor", 
-    palette = "Set2"
-  ) %>%  
-  summary_rows(
-    groups = TRUE,
-    columns = c(antibiotics_per_person), 
-    fns = list(Average = ~mean(., na.rm = TRUE))
-  ) %>% 
-  grand_summary_rows(
-    columns = c(antibiotics_per_person), 
-    fns = list("Overall Average" = ~mean(., na.rm = TRUE))
-  )
-```
-
-```{r}
-#loading package needed for creating a table
-library(gt)
-# table of all data examined
-all_prescription_and_hb_data %>%
-  arrange(year, antibiotic_type, hb_name) %>%  # Sort by year, then antibiotic type
-  select(year, antibiotic_type, hb_name, prescription_number, health_board_population, antibiotics_per_person) %>%
-  gt(groupname_col = "year", rowname_col = "antibiotic_type") %>%  # Group by year and antibiotic type
-  cols_label(
-    hb_name = "Health Board", 
-    prescription_number = "Prescription Number", 
-    health_board_population = "Health Board Population",
-    antibiotics_per_person = "Antibiotics Per Person"
-  ) %>% 
-  tab_header(
-    title = "Antibiotic Prescriptions Before, During and After Covid-19", 
-    subtitle = "Data from Scottish health boards 2016, 2020, 2024"
-  ) %>% 
-  fmt_number(columns = c(prescription_number, health_board_population), use_seps = TRUE) %>%
   tab_style(
     style = cell_fill(color = "lightblue"),
     locations = cells_row_groups()
   ) %>%
-  summary_rows(
-    groups = TRUE,
-    columns = c(antibiotics_per_person), 
-    fns = list(Average = ~mean(., na.rm = TRUE))
-  ) %>% 
-  grand_summary_rows(
-    columns = c(antibiotics_per_person), 
-    fns = list("Overall Average" = ~mean(., na.rm = TRUE))
-  )
+  data_color(columns = antibiotic_type, method = "factor", palette = my_colors) %>%
+  summary_rows(groups = TRUE, columns = c(antibiotics_per_person), fns = list(Average = ~mean(., na.rm = TRUE))) %>%
+  grand_summary_rows(columns = c(antibiotics_per_person), fns = list("Overall Average" = ~mean(., na.rm = TRUE)))
+
+
 ```
 
+In conclusion, it can be seen that there was a change in antibiotic prescribing patterns across scottish healthboards during the covid 19 pandemic. The number of prescriptions decreased from 2016, and increased again in 2024 following the pandemic. Additionally, though Amoxicillin was always the most common antibiotic prescribed across Scottish Healthboards, in 2024, Flucloxicillin and Pivemicillan prescriptions increased, from both 2016 and 2020. Reduced prescriptions could have been a direct effect opf less visits to General practicitioners, therefore reducing the number of precautionary prescriptions, though it may not be the only reason. Moreover the change in types of antibiotics could also have been an effect of the pandemic, though this could also have ben to change sin prescription guidleines put in place after the covid 19 pandemic.
+
 ```{r}
-references <- tibble(
-  References = c(
-    "Francis, N.A., Hood, K., Lyons, R. and Butler, C.C., 2016. Understanding flucloxacillin prescribing trends and treatment non-response in UK primary care: a Clinical Practice Research Datalink (CPRD) study. Journal of Antimicrobial Chemotherapy, 71(7), pp.2037-2046.",
-    "Salcolm, W., Seaton, R.A., Haddock, G., Baxter, L., Thirlwell, S., Russell, P., Cooper, L., Thomson, A. and Sneddon, J., 2020. Impact of the COVID-19 pandemic on community antibiotic prescribing in Scotland. JAC-Antimicrobial Resistance, 2(4), p.dlaa105."
-  )
-)
+
+references <- tibble(References = c("Francis, N.A., Hood, K., Lyons, R. and Butler, C.C., 2016. Understanding flucloxacillin prescribing trends and treatment non-response in UK primary care: a Clinical Practice Research Datalink (CPRD) study. Journal of Antimicrobial Chemotherapy, 71(7), pp.2037-2046.","Malcolm, W., Seaton, R.A., Haddock, G., Baxter, L., Thirlwell, S., Russell, P., Cooper, L., Thomson, A. and Sneddon, J., 2020. Impact of the COVID-19 pandemic on community antibiotic prescribing in Scotland. JAC-Antimicrobial Resistance, 2(4), p.dlaa105.", "Zhong, X., Pate, A., Yang, Y.T., Fahmi, A., Ashcroft, D.M., Goldacre, B., MacKenna, B., Mehrkar, A., Bacon, S.C., Massey, J. and Fisher, L., 2023. The impact of COVID-19 on antibiotic prescribing in primary care in England: evaluation and risk prediction of appropriateness of type and repeat prescribing. Journal of Infection, 87(1), pp.1-11."))
 
 references %>%
   gt() %>%
-  tab_header(
-    title = "References",
-    subtitle = "Harvad Formatted"
-  ) %>%
-  tab_style(
-    style = cell_fill(color = "#f0f0f0"),
-    locations = cells_body()
-  ) %>%
-  tab_style(
-    style = list(
-      cell_fill(color = "lightblue"),
-      cell_text(color = "white", weight = "bold")
-    ),
-    locations = cells_title(groups = "title")
-  ) %>%
-  tab_options(
-    table.width = pct(100),
-    table.border.top.color = "lightblue",
-    table.border.bottom.color = "lightblue"
-  )
+  tab_header(title = "References", subtitle = "Harvad Formatted") %>%
+  tab_style(style = cell_fill(color = "#f0f0f0"), locations = cells_body()) %>%
+  tab_style(style = list(cell_fill(color = "lightblue"), cell_text(color = "white", weight = "bold")), locations = cells_title(groups = "title")) %>%
+  tab_options(table.width = pct(100), table.border.top.color = "lightblue", table.border.bottom.color = "lightblue")
 ```
 
 References:
@@ -286,3 +226,5 @@ References:
 Francis, N.A., Hood, K., Lyons, R. and Butler, C.C., 2016. Understanding flucloxacillin prescribing trends and treatment non-response in UK primary care: a Clinical Practice Research Datalink (CPRD) study. Journal of Antimicrobial Chemotherapy, 71(7), pp.2037-2046.
 
 Malcolm, W., Seaton, R.A., Haddock, G., Baxter, L., Thirlwell, S., Russell, P., Cooper, L., Thomson, A. and Sneddon, J., 2020. Impact of the COVID-19 pandemic on community antibiotic prescribing in Scotland. JAC-Antimicrobial Resistance, 2(4), p.dlaa105.
+
+Zhong, X., Pate, A., Yang, Y.T., Fahmi, A., Ashcroft, D.M., Goldacre, B., MacKenna, B., Mehrkar, A., Bacon, S.C., Massey, J. and Fisher, L., 2023. The impact of COVID-19 on antibiotic prescribing in primary care in England: evaluation and risk prediction of appropriateness of type and repeat prescribing. Journal of Infection, 87(1), pp.1-11.
