@@ -1,9 +1,18 @@
 ---
 title: "Examining the differences in Antibiotic Prescriptions across Scottish health boards, before (2016), During (2020) and after (2024) Covid-19"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    code_folding: hide
 date: "2025-14-11"
 ---
-This analysis will examine the difference in antibiotic prescriptions across Scottish Health boards, and how these were affected by the Covid-19 Pandemic. To assess this, prescription data from all scottish healthboards was examined from 2024 (4 years after the pandemic began), 2020 (during the pandemic), and 2016 (4 years before the pandemic), to view how the number and types of antibiotics prescribed changed over time. Looking into antibiotic prescribing patterns is particularly important, as currently AMR (Antimicrobial Resistance), is a pressing topic of dicussion, as it continues to rise due to inappropriate and overuse of antibiotics, often due to careless prescribing across healthboards.
+
+Introduction 
+
+This analysis will examine the difference in antibiotic prescriptions across Scottish Health boards, and how these were affected by the Covid-19 Pandemic. To assess this, prescription data from all scottish healthboards was examined from 2024 (4 years after the pandemic began), 2020 (during the pandemic), and 2016 (4 years before the pandemic), to view how the number and types of antibiotics prescribed changed over time. Looking into antibiotic prescribing patterns is particularly important, as currently AMR (Antimicrobial Resistance), is a pressing topic of discussion, as it continues to rise due to inappropriate and overuse of antibiotics, often due to careless prescribing across healthboards.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
@@ -15,6 +24,16 @@ library(tidyverse)
 library(janitor)
 library(here)
 library(purrr)
+library(forcats) #needed to reorder bars 
+library(tidytext)#needed for scale_reordered
+library(plotly) #needed to make the graph interactive
+library(gt) #loading package to make table
+library(reactable)
+library(RColorBrewer)
+library(dplyr)
+library(reactable)
+library(htmltools)
+
 ```
 Created own function to load data from every month of 2024, 2020, and 2016 from NHS open data website, compiling of prescription datasets by prescriber location. Using read_csv function, and cleaning names to remove upper case letter and leave column and data names in the same format. Additionally filtering the data using str_detect to select only antibiotics prescribed within these healthboards. Selecting only the columns to be examined and grouping these for easier analysis. 
 
@@ -27,9 +46,6 @@ Antibiotic Prescription names were renamed, so that only the antibiotic type was
 list_urls <- read_csv(here("data","file_links.csv")) %>% 
   select(Links) %>% #here, select is used to select the column in csv file called links which contains urls 
   pull() # pull takes urls from this csv and uploads into a list of r values called list_urls
-
-#example url to test function with
-example_url <- c("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/0727befa-5530-4c1d-aff0-ccb7554eff7a/download/pitc201602.csv")
 
 #function made in order to run all prescription data sets at once, renaming health board code columns to be all same since data from 2016 has a different names, and was changed before 2020 and 2024 data
 process_csv <- function(url) {
@@ -44,11 +60,9 @@ prescription_data <- prescription_data %>%
     group_by(year, antibiotic_type, hb) %>%
     summarise(prescription_number = sum(prescription_number, na.rm = TRUE), .groups = "drop")
 }
-#running example using function, to test it works and does what I've stated it to do. 
-example <- process_csv(example_url)
+
 #running function with all data in list of urls
 combined_prescription_data <- map_dfr(list_urls, process_csv)
-
 ```
 Next loading Health Board names, since the NHS prescription data sets only include healthboard codes, not names. Also loadinf population data from the census 2022, to join with the prescription data to allow calculation of Antibiotic prescriptions per person.
 
@@ -96,15 +110,15 @@ This combined full data set was transformed into a graph, comparing the total nu
 
 This reduction in antibiotic prescribing could have been due to less inappropriate prescriptions being handed out across scottish healthboards. Fewer visits to GPs, means that less antibiotics may have been given for the treatment of conditions that don't actually require it. Such as certain upper respiratory tract conditions. A study completed in England, revealed the percentage of antibiotics given out for treating this that are deemed inappropriate is 69.6%. Though this study focuses on antibiotic prescribing patterns in Scotland, the NHS is the premis of both of these healthboards so similar trends could be expected (Zhong et al., 2023). 
 
+Plot 1
 ```{r}
-library(forcats) #needed to reorder bars 
-library(tidytext)#needed for scale_reordered
-library(plotly) #needed to make the graph interactive
-
 p1 <- all_prescription_and_hb_data %>% 
   group_by(year, hb_name) %>%
   summarise(total_antibiotics = sum(antibiotics_per_person), .groups = "drop") %>% 
-  ggplot(aes(x = year, y = total_antibiotics, color = hb_name, group = hb_name)) +
+  ggplot(aes(x = year, y = total_antibiotics, color = hb_name, group = hb_name,
+             text = paste0("Health Board: ", hb_name,
+                          "\nYear: ", year,
+                          "\nAntibiotics Per Person: ", round(total_antibiotics, 2)))) +
   geom_line(size = 1) +
   geom_point(size = 2) +
   scale_color_manual(values = my_colors) +
@@ -120,27 +134,26 @@ p1 <- all_prescription_and_hb_data %>%
 ggplotly(p1, tooltip = "text")
 ```
 Next a graph was produced showing the most common antibiotic types per year, to determine whether choice of Ab prescriptions has changed. It was shown that across all 3 years, Amoxicillin is the most commonly prescribed antibiotic. With phenoxymethylpenicillin second most. Additionally it can be seen that the proportion of flucloxacillin is increased in 2024. Flucloxicillin is a narrow spectrum antibiotic, as opposed to Amoxicillin and phenoxymethylpenicillin which are broad spectrum. This means it targets bacteria more specifically, and in turn reduces risk of multi drig resistant bacteria. Prescriptions of this may have increased in 2024, as antibiotic resistance has developed against other commonly prescribed antibiotics. However the increased use of flucloxicillin is concerning for human health, as increased use facilitates a selection pressure for resistant bacteria to develop against it (Francis et al., 2016). 
+
+Plot 2
 ```{r}
-library(ggplot2)
-library(dplyr)
-
 p2 <- all_prescription_and_hb_data %>% 
-ggplot( aes(x = factor(year), y = antibiotics_per_person, fill = antibiotic_type)) +
-  geom_col(position = "stack") +
-  scale_fill_brewer(palette = "Set2") +
-  labs(title = "Antibiotic Distribution by Year", x = "Year", y = "Antibiotics Per Person", fill = "Antibiotic Type") +
-  my_theme()
-
-all_prescription_and_hb_data %>% 
-  ggplot(aes(x = year, y = antibiotics_per_person, color = hb_name, group = hb_name)) +
+  ggplot(aes(x = year, y = antibiotics_per_person, 
+             color = antibiotic_type, group = antibiotic_type, text = paste0("Antibiotic: ", antibiotic_type,"\nYear: ", year,"\nPer Person: ", round(antibiotics_per_person, 3)))) +
   geom_line(size = 1) +
   geom_point(size = 2) +
+  facet_wrap(~hb_name) +
   scale_color_manual(values = my_colors) +
-  labs(x = "Year", y = "Antibiotics Per Person", title = "Change in Antibiotic Types Over Time by Health Board", color = "Antibiotic Type") +
+  labs(x = "Year", 
+       y = "Antibiotics Per Person", 
+       title = "Top Antibiotic Types by Health Board",
+       color = "Antibiotic Type") +
   my_theme() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ggplotly(p2, tooltip = "text")
+
+#might make this not a line graph
 ```
 Since it could be seen that the number of antibiotics administered per person did change with covid 19, next the scale at which these differences occured was examined to determine which healthboard may hev had the greatest covid impact on prescribing practices.
 ```{r}
@@ -158,22 +171,32 @@ ab_differences <- all_prescription_and_hb_data %>%
 ```
 
 Graph exploring differences between each year across healthboards to analyse which had the biggest effect from Covid 19. 
+
+Plot 3
 ```{r}
 #plot of ab prescription differences, again using them theme and colour function here
+
 p3 <- ab_differences %>%
-  mutate(hb_name = fct_reorder(hb_name, difference)) %>%
-  ggplot(aes(x = hb_name, y = difference, fill = hb_name)) +
-  geom_col(show.legend = TRUE) +
-  labs(x = "Health Board Name", y = "Change in Antibiotic Quantity Per Person", title = "Difference in Number of Antibiotics Prescribed per person, Before, During and After Covid 19 Pandemic", fill = "Antibiotic Type") +
-  facet_wrap(~comparison) +
- scale_fill_manual(values = my_colors) + #adding new adapted colour scheme
-  my_theme() #adding graph theme function. 
+  mutate(hb_name = fct_reorder(hb_name, difference),
+         text = paste0("Health Board: ", hb_name,
+                      "\nChange: ", round(difference, 3), " per person",
+                      "\nPeriod: ", comparison)) %>%
+  ggplot(aes(x = difference, y = hb_name, fill = hb_name,
+             text = text)) +
+  geom_col(show.legend = TRUE) +  
+  labs(y = "Health Board", 
+       x = "Change in Antibiotics Per Person", 
+       title = "Change in Antibiotic Prescriptions: COVID-19 Impact",
+       subtitle = "Comparison across three time periods") +
+  facet_wrap(~comparison, ncol = 3) +  # Side by side for comparison
+  scale_fill_manual(values = my_colors) +
+  my_theme() 
 
 ggplotly(p3, tooltip = "text")
 ```
 
+
 ```{r}
-library(gt) #loading package to make table 
 tibble_data <- all_prescription_and_hb_data %>% 
   select(year, antibiotic_type, antibiotics_per_person) %>% 
   group_by(antibiotic_type, year) %>% 
@@ -189,53 +212,49 @@ tibble_data %>%
   tab_style(style = cell_fill(color = "white"), locations = cells_row_groups()) %>%
   tab_style(style = cell_text(weight = "bold"), locations = cells_row_groups()) %>% 
   data_color(columns = antibiotic_type, method = "factor", palette = my_colors) %>% #altering headings and cell colours to make graph visually appealing and easier to understand 
-  summary_rows(groups = TRUE, columns = c(antibiotics_per_person), fns = list(Average = ~mean(., na.rm = TRUE))) %>%
-  tab_source_note(
-    source_note = html('📊 <a href="https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community" target="_blank" style="text-decoration:none;">Click here for full dataset</a>'))
+tab_source_note(source_note = html('📊 <ahref="https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community" target="_blank" style="text-decoration:none;">Prescription Datasets</a>')) #adding link that can be clicked at the bottom of the table which takes you to the open nhs datasets for prescriptions in the community, named prescription data sets for easy readability
 ```
+
+```{r}
+tibble_data_2 <- all_prescription_and_hb_data %>% 
+  left_join(ab_differences, join_by(hb_name, antibiotic_type)) %>% 
+  select(antibiotic_type, hb_name, `2016`, `2020`, `2024`) %>% 
+  filter(if_all(c(`2016`, `2020`, `2024`), ~ !is.na(.))) %>% 
+  group_by(antibiotic_type)
+
+tibble_data_2 %>% 
+  gt(groupname_col = "hb_name") %>% #selecting year to group data, and titling these columns using values in the column year 
+  cols_label(antibiotic_type = "Antibiotic Type", `2016` = "Antibiotics Per Person in 2016", `2020` = "Antibiotics Per Person in 2020", `2024` = "Antibiotics Per Person in 2024") %>%
+  tab_header(title = "Antibiotic Prescriptions Before, During and After Covid-19", subtitle = "Data from Scottish health boards 2016, 2020, 2024") %>%
+  tab_spanner(label = "Health Boards",
+    columns = c(hb_name)) %>% 
+  fmt_number(columns = c(`2016`, `2020`, `2024`), use_seps = TRUE) %>% #defining columns I want to include in my table 
+  tab_style(style = cell_text(weight = "bold"), locations = cells_title(groups = "title")) %>%
+  tab_style(style = cell_text(weight = "bold"), locations = cells_column_labels()) %>%
+  tab_style(style = cell_fill(color = "white"), locations = cells_row_groups()) %>%
+  tab_style(style = cell_text(weight = "bold"), locations = cells_row_groups()) %>% 
+  data_color(columns = antibiotic_type, method = "factor", palette = my_colors) %>% #altering headings and cell colours to make graph visually appealing and easier to understand 
+tab_source_note(source_note = html('📊 <ahref="https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community" target="_blank" style="text-decoration:none;">Prescription Datasets</a>'))
+
+
+```
+
 In conclusion, it can be seen that there was a change in antibiotic prescribing patterns across scottish healthboards during the covid 19 pandemic. The number of prescriptions decreased from 2016, and increased again in 2024 following the pandemic. Additionally, though Amoxicillin was always the most common antibiotic prescribed across Scottish Health boards, in 2024, Flucloxicillin and Pivemicillan prescriptions increased, from both 2016 and 2020. Reduced prescriptions could have been a direct effect opf less visits to General practitioners, therefore reducing the number of precautionary prescriptions, though it may not be the only reason. Moreover the change in types of antibiotics could also have been an effect of the pandemic, though this could also have ben to change sin prescription guidleines put in place after the Covid 19 pandemic.
 
 ```{r}
-references <- tibble(References = c("Francis, N.A., Hood, K., Lyons, R. and Butler, C.C., 2016. Understanding flucloxacillin prescribing trends and treatment non-response in UK primary care: a Clinical Practice Research Datalink (CPRD) study. Journal of Antimicrobial Chemotherapy, 71(7), pp.2037-2046.","Malcolm, W., Seaton, R.A., Haddock, G., Baxter, L., Thirlwell, S., Russell, P., Cooper, L., Thomson, A. and Sneddon, J., 2020. Impact of the COVID-19 pandemic on community antibiotic prescribing in Scotland. JAC-Antimicrobial Resistance, 2(4), p.dlaa105.", "Zhong, X., Pate, A., Yang, Y.T., Fahmi, A., Ashcroft, D.M., Goldacre, B., MacKenna, B., Mehrkar, A., Bacon, S.C., Massey, J. and Fisher, L., 2023. The impact of COVID-19 on antibiotic prescribing in primary care in England: evaluation and risk prediction of appropriateness of type and repeat prescribing. Journal of Infection, 87(1), pp.1-11."))
-references %>%
-  gt() %>%
-  tab_header(title = "References", subtitle = "Harvard Formatted") %>%
-  tab_style(style = cell_fill(color = "#f0f0f0"), locations = cells_body()) %>%
-  tab_style(
-    style = list(cell_fill(color = "#8DA0CB"), cell_text(color = "white", weight = "bold")), 
-    locations = cells_title(groups = "title")
-  ) %>% tab_style(
-    style = cell_text(weight = "bold"), 
-    locations = cells_title(groups = "subtitle")
-  ) %>%
-  tab_style(
-    style = cell_text(weight = "bold"), 
-    locations = cells_column_labels()
-  ) %>%
-  tab_options(
-    table.width = pct(100), 
-    table.border.top.color = "#8DA0CB", 
-    table.border.bottom.color = "#8DA0CB")
-```
-
-```{r}
 references <- tibble(References = c("Francis, N.A., Hood, K., Lyons, R. and Butler, C.C., 2016. Understanding flucloxacillin prescribing trends and treatment non-response in UK primary care: a Clinical Practice Research Datalink (CPRD) study. Journal of Antimicrobial Chemotherapy, 71(7), pp.2037-2046.", "Malcolm, W., Seaton, R.A., Haddock, G., Baxter, L., Thirlwell, S., Russell, P., Cooper, L., Thomson, A. and Sneddon, J., 2020. Impact of the COVID-19 pandemic on community antibiotic prescribing in Scotland. JAC-Antimicrobial Resistance, 2(4), p.dlaa105.", "Zhong, X., Pate, A., Yang, Y.T., Fahmi, A., Ashcroft, D.M., Goldacre, B., MacKenna, B., Mehrkar, A., Bacon, S.C., Massey, J. and Fisher, L., 2023. The impact of COVID-19 on antibiotic prescribing in primary care in England: evaluation and risk prediction of appropriateness of type and repeat prescribing. Journal of Infection, 87(1), pp.1-11."), URL = c("https://doi.org/10.1093/jac/dkw084", "https://doi.org/10.1093/jacamr/dlaa105", "https://doi.org/10.1016/j.jinf.2023.05.010")) %>%
-  mutate(Clickable_Reference = paste0('<a href="', URL, '" target="_blank" style="color: #333; text-decoration: none;">', References, '</a>'))
+  mutate(Clickable_Reference = paste0('<a href="', URL, '" target="_blank" style="color: #333; text-decoration: none;">', References, '</a>')) #creating a tibble of references and urls to create interactive reference table
 
 references %>%
   select(Clickable_Reference) %>%
   gt() %>%
-  fmt_markdown(columns = Clickable_Reference) %>%
+  fmt_markdown(columns = Clickable_Reference) %>% #making reference table interactive to allow sources to be seen easily
   cols_label(Clickable_Reference = "References") %>%
-  tab_header(title = "References", subtitle = "Harvard Formatted") %>%
-  tab_style(style = cell_fill(color = "#f0f0f0"), locations = cells_body()) %>%
+  tab_header(title = "Reference Table", subtitle = "Harvard Formatted") %>%
+  tab_style(style = cell_fill(color = "#f0f0f0"), locations = cells_body()) %>% #making cell fill grey
   tab_style(
-    style = list(cell_fill(color = "#8DA0CB"), cell_text(color = "white", weight = "bold")), 
+    style = list(cell_fill(color = "white"), cell_text(color = "black", weight = "bold")), #making top of table white with black text
     locations = cells_title(groups = "title")) %>% 
-  tab_style(style = cell_text(weight = "bold"), 
-    locations = cells_title(groups = "subtitle")) %>%
-  tab_style(style = list(cell_fill(color = "#8DA0CB"), cell_text(color = "white", weight = "bold")), locations = cells_column_labels()) %>%
-  tab_options(table.width = pct(100), 
-    table.border.top.color = "#8DA0CB", 
-    table.border.bottom.color = "#8DA0CB")
+  tab_style(style = cell_text(weight = "bold"), locations = cells_title(groups = "subtitle")) %>%
+  tab_style(style = cell_text(color = "black", weight = "bold"), locations = cells_column_labels())  #making column heading text black and bold
 ```
