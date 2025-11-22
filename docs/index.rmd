@@ -10,6 +10,7 @@ output:
 date: "2025-11-27"
 ---
 # Introduction  
+
 Antibiotics are essential to treat and decrease the spread of infections within communities. Increasing rates of AMR (Antimicrobial Resistance), has prompted investigation into antibiotic prescribing patterns,revealing inappropriate and overuse of antibiotics. In Scotland, Antibiotics are most commonly prescribed in GP practices, often for the treatment of respiratory diseases. However, some cases these antibiotics are unnecessary, which drives bacterial resistance to antibiotics (Malcom et al., 2020). During the Covid-19 pandemic, lock down restrictions on where the public could go, decreased the number of GP trips, and social mixing in the community subsequently lowering rate of antibiotic prescriptions (Malcom et al., 2020).  
 
 This analysis will examine changes in antibiotic prescriptions across Scottish Health boards, by assessing prescription data from all Scottish Health boards from 2024 (4 years after the pandemic began), 2020 (during the pandemic), and 2016 (4 years before the pandemic), to view how the number and types of antibiotics prescribed changed as a result of the pandemic. Examining changes in antibiotic prescribing could give powerful insights into ways in which antibiotic prescribing could be monitored to reduce the emergence and spread of AMR. 
@@ -32,6 +33,7 @@ library(htmltools) #to add l
 ## Data Loading
 
 ### Prescription Data
+
 Listed all urls from data sets into a csv file to load numerous data sets similtaneously. A function was created to load data sets from every month of 2024, 2020, and 2016 from NHS open data website, that cover prescriptions by prescriber location. The data was read and cleaned to make logical column names, the filtered to select only antibiotic prescriptions in Scotland. Data sets were joined and merged to form a full data set of the 3 years prescribing data. Antibiotic prescription names were simplified to show only antibiotic types, regardless of dosage. Months were removed from year labels to focus on annual summaries.
 ```{r}
 list_urls <- read_csv(here("data","file_links.csv")) %>% 
@@ -59,6 +61,7 @@ combined_prescription_data <- map_dfr(list_urls, process_csv)
 health_board_names <- read_csv("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/resource/652ff726-e676-4a20-abda-435b98dd7bdc/download/hb14_hb19.csv") %>% clean_names()
 ```
 ### Population Data 
+
 Loading population data from the census 2022, to join with the prescription data to allow calculation of Antibiotic prescriptions per person. Population data from the census needed to be tidied as it is in a format not compatible with R. This involved renaming the empty column as spare, renaming the columns to the same name as the other combined data set. Additionally combining the population of all age and sex groups to calculate total populations of each health board. 
 ```{r}
 population <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10) %>% #reading data within the 'data' folder
@@ -69,6 +72,7 @@ population <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10
   mutate(hb_name = paste("NHS", hb_name))  #putting health board names in same format at health board data
 ```
 ## Data joining 
+
 Data must all be joined to allow identification of health boards and comparisons with antibiotic prescription number and population.
 ```{r}
 all_prescription_and_hb_data <- combined_prescription_data %>% 
@@ -76,6 +80,7 @@ all_prescription_and_hb_data <- combined_prescription_data %>%
   full_join(population) #joining function, matches same columns 
 ```
 ## Data Wrangling
+
 ### Calculating Antibiotics Per person
 ```{r}
 all_prescription_and_hb_data <- all_prescription_and_hb_data %>% 
@@ -87,6 +92,7 @@ all_prescription_and_hb_data <- all_prescription_and_hb_data %>%
   arrange(year, antibiotic_type, desc(antibiotics_per_person))  # Sort by year, then antibiotic, then value, group and sort again after to keep ab types together for for better table layout
 ```
 ### Calculating Differences in Antibiotics per person over the years
+
 Since it could be seen that the number of antibiotics administered per person did change with Covid-19, next the scale at which these differences occurred was examined to determine which health board may had the greatest Covid impact on prescribing practices
 ```{r}
 # Aggregate first, then pivot
@@ -102,6 +108,7 @@ ab_differences <- all_prescription_and_hb_data %>%
   arrange(desc(percentage_change)) #arrange from biggest to smallest difference for initial examination of which health board had the greatest change in prescription numbers per person across years.
 ```
 ## Data Design Functions
+
 ### Creating custom theme and colour scheme
 ```{r}
 #creating my own theme for graphs, so all have cohesive colours, text sizes, titles, backgrounds etc. This saves space within my code and prevents me having to type the same code over again for each graph. 
@@ -114,6 +121,7 @@ my_theme <- function() {
 my_colours <- colorRampPalette(brewer.pal(8, "Set2"))(14)
 ```
 # Analysis
+
 ## Plot 1
 ```{r}
 p1 <- all_prescription_and_hb_data %>% 
@@ -128,6 +136,7 @@ p1 <- all_prescription_and_hb_data %>%
 ggplotly(p1, tooltip = "text", width = 800, height = 600) #confirming interactive element of graph
 ```
 This combined full data set was transformed into a graph, comparing  total number of prescriptions per head in each health board and facet-wrapped across years.It was seen that during Covid-19 in 2020, antibiotic prescriptions decreased from 2016 before Covid, and increased after Covid-19 (2024). This result is consistant with a study conducted on the impact of Covid 19 on antibiotic prescriptions, that showed a 34% reduction in antibiotic prescriptions for respiratiory conditions from 2019 to 2020 (Malcom et al,. 2020). This decrease could be a result of decreased diagnosed infections due to reduced social interactions and GP visits, lowering antibiotic use (Malcom et al., 2020). This reduction could have reduced  inappropriate antibiotic prescriptions, which could lower AMR, as studies estimate nearly 69.6% of antibiotic prescriptions to be inappropriate in England, suggesting similar trends in Scotland (Zhong et al., 2023).
+
 ## Plot 2
 ```{r}
 p2 <- all_prescription_and_hb_data %>%
@@ -144,6 +153,7 @@ p2 <- all_prescription_and_hb_data %>%
 ggplotly(p2, tooltip = "text", width = 800, height = 600) #confirming interactive element of graph
 ```
 Next a graph was produced showing the most common antibiotic types per year, revealing across all 3 years, Amoxicillin was the most commonly prescribed antibiotic, followed by phenoxymethylpenicillin. Both of these  are broad spectrum antibiotics meaning they are prescribed to treat a range of infections, which could explain why these are most commonly prescribed in Scotland. Additionally it can be seen that the proportion of flucloxacillin, a narrow spectrum antibiotic, increased in 2024. Prescriptions of this may have increased in 2024, due to its specificity, as antibiotic resistance has developed against other commonly prescribed antibiotics (Francis et al., 2016). Though, Pivemicillinam was not commonly prescribed, potentially because of the decreased infection coverage it provides due to its narrow spectrum nature.
+
 ## Plot 3
 ```{r}
 #maybe need to reevaluate what this graph is doing 
@@ -159,6 +169,7 @@ p3 <- ab_differences %>%
 ggplotly(p3, tooltip = "text", width = 800, height = 600) #confirming interactive element of graph
 ```
 ## Table of Results
+
 ```{r}
 #editing data to produce tibble data 
 tibble_data <- all_prescription_and_hb_data %>%
@@ -180,8 +191,11 @@ data_color(columns = antibiotic_type, method = "factor", palette = my_colours) %
 tab_source_note(source_note = html('📊 <a href="https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community" target="_blank" style="text-decoration:none;">Prescription Datasets</a>', '📊 <a href= "https://www.scotlandscensus.gov.uk/webapi/jsf/tableView/tableView.xhtml" target="_blank" style="text-decoration:none;">Census Data </a>'))
 ```
 # Conclusion
+
 In conclusion, there was a change in antibiotic prescribing patterns across Scottish healthboards during the Covid-19 pandemic. Prescriptions decreased from 2016, and increased again in 2024 following the pandemic. Additionally,  amoxicillin was the most common antibiotic prescribed across all years, but flucloxicillin and pivemicillan prescriptions increased in 2024, from both 2016 and 2020. Reduced prescriptions could have been due to less GP visits, and cases of infection, reducing the number of  prescriptions. Changes in types of antibiotics could also have been an effect of the pandemic, or due to changes in prescription guidelines put in place after the Covid 19 pandemic.
+
 # References
+
 ```{r}
 references <- tibble(References = c("Francis, N.A., Hood, K., Lyons, R. and Butler, C.C., 2016. Understanding flucloxacillin prescribing trends and treatment non-response in UK primary care: a Clinical Practice Research Datalink (CPRD) study. Journal of Antimicrobial Chemotherapy, 71(7), pp.2037-2046.", "Malcolm, W., Seaton, R.A., Haddock, G., Baxter, L., Thirlwell, S., Russell, P., Cooper, L., Thomson, A. and Sneddon, J., 2020. Impact of the COVID-19 pandemic on community antibiotic prescribing in Scotland. JAC-Antimicrobial Resistance, 2(4), p.dlaa105.", "Zhong, X., Pate, A., Yang, Y.T., Fahmi, A., Ashcroft, D.M., Goldacre, B., MacKenna, B., Mehrkar, A., Bacon, S.C., Massey, J. and Fisher, L., 2023. The impact of COVID-19 on antibiotic prescribing in primary care in England: evaluation and risk prediction of appropriateness of type and repeat prescribing. Journal of Infection, 87(1), pp.1-11."), URL = c("https://doi.org/10.1093/jac/dkw084", "https://doi.org/10.1093/jacamr/dlaa105", "https://doi.org/10.1016/j.jinf.2023.05.010")) %>%
   mutate(Clickable_Reference = paste0('<a href="', URL, '" target="_blank" style="color: #333; text-decoration: none;">', References, '</a>')) #creating a tibble of references and urls to create interactive reference table
