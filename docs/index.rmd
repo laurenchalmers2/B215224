@@ -13,7 +13,7 @@ date: "2025-11-27"
 
 Antibiotics are essential to treat and decrease the spread of infections within communities. Increasing rates of AMR (Antimicrobial Resistance), has prompted investigation into antibiotic prescribing patterns, revealing inappropriate and overuse of antibiotics (Nowakowska et al., 2019). In Scotland, Antibiotics are most commonly prescribed in GP practices, often for the treatment of respiratory diseases. However, some cases these antibiotics are unnecessary, which drives bacterial resistance to antibiotics (Nowakowska et al., 2019; MalcoLm et al., 2020). During the Covid-19 pandemic, lock down restrictions on where the public could go, decreased the number of GP trips, and social mixing in the community subsequently lowering rate of antibiotic prescriptions (Malcolm et al., 2020).  
 
-This analysis will examine changes in Penicillin antibiotic prescriptions across Scottish Health boards, by assessing prescription data from all Scottish Health boards from 2024 (4 years after the pandemic began), 2020 (during the pandemic), and 2016 (4 years before the pandemic), to view how the number and types of penicillin antibiotics prescribed changed as a result of the pandemic. Examining changes in antibiotic prescribing could give powerful insights into ways in which antibiotic prescribing could be monitored to reduce the emergence and burden of AMR. 
+This analysis will examine changes in Penicillin antibiotic prescriptions across Scottish Health boards, by assessing prescription data from all Scottish Health boards from 2024 (4 years after the pandemic began), 2020 (during the pandemic), and 2016 (4 years before the pandemic), to view how the number and types of penicillin antibiotics prescribed changed as a result of the pandemic. Examining changes in penicillin antibiotic prescribing as a result of Covid-19 could give powerful insights into ways in which antibiotic prescribing could be monitored to reduce the emergence and burden of AMR. 
 
 # Data Processsing
 
@@ -94,7 +94,7 @@ population <- read_csv(here("data", "healthboardpopulationbyage.csv"), skip = 10
   filter(age == "All people" & sex == "All people") %>% 
   select(hb_name, health_board_population) %>% 
   
-#Putting health board names in same format aS health board data
+#Putting health board names in same format as health board data
   mutate(hb_name = paste("NHS", hb_name))
 ```
 
@@ -208,7 +208,7 @@ p1 <- all_prescription_and_hb_data %>%
 #Adding interactive graph element and adjusting plot size 
 ggplotly(p1, tooltip = "text", width = 800, height = 600) 
 ```
-This combined full data set was transformed into a graph, comparing  total number of prescriptions per head in each health board and facet-wrapped across years. It was seen that during Covid-19 in 2020, penicillin antibiotic prescriptions decreased from 2016 before Covid, and increased after Covid-19 (2024). This result is consistent with a study conducted on the impact of Covid 19 on antibiotic prescriptions, that showed a 34% reduction in antibiotic prescriptions for respiratiory conditions from 2019 to 2020 (Malcolm et al,. 2020). This decrease could be a result of decreased diagnosed infections due to reduced social interactions and GP visits, lowering antibiotic use (Malcolm et al., 2020). This reduction could have reduced inappropriate penicillin antibiotic prescriptions, which could lower AMR, as studies estimate nearly 69.6% of antibiotic prescriptions to be inappropriate in England, suggesting similar trends in Scotland (Zhong et al., 2023).
+This combined full data set was transformed into a graph, comparing  total number of prescriptions per head in each health board and facet-wrapped across years. It was seen that during Covid-19 in 2020, penicillin antibiotic prescriptions decreased from 2016 before Covid, and increased after Covid-19 (2024). This result is consistent with a study conducted on the impact of Covid 19 on antibiotic prescriptions, that showed a 34% reduction in antibiotic prescriptions for respiratory conditions from 2019 to 2020 (Malcolm et al,. 2020). This decrease could be a result of decreased diagnosed infections due to reduced social interactions and GP visits, lowering antibiotic use (Malcolm et al., 2020). This reduction could have reduced inappropriate penicillin antibiotic prescriptions, which could lower AMR, as studies estimate nearly 69.6% of antibiotic prescriptions to be inappropriate in England, suggesting similar trends in Scotland (Zhong et al., 2023). This data only assessed community antibiotic prescriptions though, so Covid-19 may have impacted hospital penicillin antibiotic prescriptions differently. 
 
 ## Plot 2
 
@@ -271,7 +271,7 @@ p3 <- ab_differences %>%
 
 ggplotly(p3, tooltip = "text", width = 1000, height = 600)
 ```
-Here it can be seen that, when the pandemic begun, antibiotic prescriptions decreased across all health boards, increased again after the pandemic. The biggest change in antibiotic prescriptions per person from during 2020 to 2024 was seen in the Western Isles health board and the largest change from 2016 to 2020 was in Shetland. This may have been because restrictions limited movement flow off the islands which may have limited infection spread during the pandemic, but once restrictions lifted there may have been increased travel to and from the mainland, which could have increased the number of infections, and subsequently the need for antibiotics (Malcolm et al., 2020)
+Here it can be seen that, when the pandemic begun, antibiotic prescriptions decreased across all health boards, increased again after the pandemic. The biggest change in antibiotic prescriptions per person from during 2020 to 2024 was seen in the Western Isles health board and the largest change from 2016 to 2020 was in Shetland. This may have been because restrictions limited movement flow off the islands which may have limited infection spread during the pandemic, but once restrictions lifted there may have been increased travel to and from the mainland, which could have increased the number of infections, and subsequently the need for antibiotics (Malcolm et al., 2020). However, it must be said that some health boards did not supply prescription information for some years so results may not be representitive of actual changes in prescriptions across health boards.
 
 ## Table of Results
 
@@ -305,7 +305,7 @@ tab_source_note(source_note = html('📊 <a href="https://www.opendata.nhs.scot/
 
 # Conclusion
 
-In conclusion, there was a change in antibiotic prescribing patterns across Scottish health boards during the Covid-19 pandemic. Prescriptions decreased from 2016, and increased again in 2024 following the pandemic. Additionally, amoxicillin was the most common antibiotic prescribed across all years, though flucloxacillin prescriptions increased in 2024, from both 2016 and 2020. Some health boards, such as Shetland and the Western Isles had bigger changes in penicillin antibiotic prescriptions too, which could have been due to different travel lock down restrictions. Reduced prescriptions could have been due to less GP visits, and cases of infection, reducing the number of  prescriptions. Changes in types of antibiotics could also have been an effect of the pandemic, or due to changes in prescription guidelines put in place after the Covid-19 pandemic, due to the threats of AMR.
+In conclusion, there was a change in antibiotic prescribing patterns across Scottish health boards during the Covid-19 pandemic. Prescriptions decreased from 2016, and increased again in 2024 following the pandemic. Additionally, amoxicillin was the most common antibiotic prescribed across all years, though flucloxacillin prescriptions increased in 2024, from both 2016 and 2020. Some health boards, such as Shetland and the Western Isles had bigger changes in penicillin antibiotic prescriptions too, which could have been due to different travel lock down restrictions. Reduced prescriptions could have been due to less GP visits, and cases of infection, reducing the number of  prescriptions. Changes in types of antibiotics could also have been an effect of the pandemic, or due to changes in prescription guidelines put in place after the Covid-19 pandemic, due to the threats of AMR. However, more in depth research into other types of antibiotics, and specific lock down restrictions present in each health board could provide more in depth analysis to the impact of Covid-19 on Antibiotic Prescriptions in Scottish Communities. 
 
 # References
 
