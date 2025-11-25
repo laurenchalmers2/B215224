@@ -1,5 +1,5 @@
 ---
-title: "Examining the differences in Penicillin Antibiotic Prescriptions across Scottish health boards, before (2016), During (2020) and after (2024) Covid-19"
+title: "Examining the Impact of Covid-19 on Penicillin Antibiotic Prescriptions across Scottish Health Boards"
 output: 
   html_document:
     toc: true
